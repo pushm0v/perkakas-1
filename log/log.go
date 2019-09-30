@@ -1,7 +1,6 @@
 package log
 
 import (
-	"context"
 	"io"
 	"os"
 	"runtime"
@@ -13,6 +12,7 @@ import (
 type Level uint32
 
 const (
+	FieldLogID           = "log_id"
 	FieldEndpoint        = "endpoint"
 	FieldMethod          = "method"
 	FieldRequestBody     = "request_body"
@@ -34,12 +34,12 @@ const (
 
 type Logger struct {
 	logger *log.Logger
-	ctx    context.Context
 	field  Field
 	fields log.Fields
 }
 
 type Field struct {
+	LogID          string
 	Endpoint       string
 	Method         string
 	RequestBody    interface{}
@@ -49,51 +49,57 @@ type Field struct {
 	ErrorMessage   interface{}
 }
 
-func (l *Logger) Set(field Field) {
-	l.field = field
-}
-
 func (l *Logger) SetLevel(lv Level) {
 	l.logger.Level = log.Level(uint32(lv))
 }
 
-func (l *Logger) SetEndpoint(endpoint string) {
+func (l *Logger) Set(field Field) {
+	l.field = field
+}
+
+func (l *Logger) SetLogID(logID string) *Logger {
+	l.field.LogID = logID
+	return l
+}
+
+func (l *Logger) SetEndpoint(endpoint string) *Logger {
 	l.field.Endpoint = endpoint
+	return l
 }
 
-func (l *Logger) SetMethod(method string) {
+func (l *Logger) SetMethod(method string) *Logger {
 	l.field.Method = method
+	return l
 }
 
-func (l *Logger) SetRequestBody(body interface{}) {
+func (l *Logger) SetRequestBody(body interface{}) *Logger {
 	l.field.RequestBody = body
+	return l
 }
 
-func (l *Logger) SetRequestHeaders(headers interface{}) {
+func (l *Logger) SetRequestHeaders(headers interface{}) *Logger {
 	l.field.RequestHeader = headers
+	return l
 }
 
-func (l *Logger) SetResponseBody(body interface{}) {
+func (l *Logger) SetResponseBody(body interface{}) *Logger {
 	l.field.ResponseBody = body
+	return l
 }
 
-func (l *Logger) SetResponseHeaders(headers interface{}) {
+func (l *Logger) SetResponseHeaders(headers interface{}) *Logger {
 	l.field.ResponseHeader = headers
+	return l
 }
 
-func (l *Logger) SetErrorMessage(errorMessage interface{}) {
-	if pc, file, line, ok := runtime.Caller(1); ok {
-		fName := runtime.FuncForPC(pc).Name()
-		l.fields["file"] = file
-		l.fields["line"] = line
-		l.fields["func"] = fName
-	}
+func (l *Logger) SetErrorMessage(errorMessage interface{}) *Logger {
 	l.field.ErrorMessage = errorMessage
+	return l
 }
 
 func (l *Logger) Log(lv Level, args ...interface{}) {
 	l.fields = map[string]interface{}{
-		"log_id":             l.ctx.Value("log_id"),
+		FieldLogID:           l.field.LogID,
 		FieldEndpoint:        l.field.Endpoint,
 		FieldMethod:          l.field.Method,
 		FieldRequestBody:     l.field.RequestBody,
@@ -103,14 +109,7 @@ func (l *Logger) Log(lv Level, args ...interface{}) {
 		FieldErrorMessage:    l.field.ErrorMessage,
 	}
 
-	if l.fields[FieldErrorMessage] == nil {
-		if pc, file, line, ok := runtime.Caller(1); ok {
-			fName := runtime.FuncForPC(pc).Name()
-			l.fields["file"] = file
-			l.fields["line"] = line
-			l.fields["func"] = fName
-		}
-	}
+	setCaller(l.fields)
 
 	entry := l.logger.WithFields(l.fields)
 
@@ -135,7 +134,18 @@ func newLog(formatter log.Formatter, out io.Writer, level log.Level, reportCalle
 	return
 }
 
-func NewLogger(ctx context.Context) (logger *Logger) {
+func setCaller(fields map[string]interface{}) {
+	if fields[FieldErrorMessage] != nil && fields[FieldErrorMessage] != "" {
+		if pc, file, line, ok := runtime.Caller(2); ok {
+			fName := runtime.FuncForPC(pc).Name()
+			fields["file"] = file
+			fields["line"] = line
+			fields["func"] = fName
+		}
+	}
+}
+
+func NewLogger() (logger *Logger) {
 	formatter := &log.JSONFormatter{
 		TimestampFormat: time.RFC3339,
 	}
@@ -145,7 +155,6 @@ func NewLogger(ctx context.Context) (logger *Logger) {
 	logger = new(Logger)
 	logger.logger = newLogger
 	logger.fields = make(map[string]interface{})
-	logger.ctx = ctx
 
 	return
 }
