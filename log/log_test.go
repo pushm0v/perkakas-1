@@ -1,11 +1,13 @@
 package log
 
 import (
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	gock "gopkg.in/h2non/gock.v1"
@@ -95,9 +97,65 @@ func (suite *LogTestSuite) TestLogBuilder() {
 		SetRequestBody(nil).
 		SetResponseBody(string(b)).
 		SetResponseHeaders(resp.Header).
-		SetErrorMessage("Error in code")
+		SetErrorMessage(errors.New("Error in code 2123123"))
 	suite.Logger.Log(InfoLevel, "testlog")
 	assert.Equal(suite.T(), true, gock.IsDone(), "must be equal")
+}
+
+func (suite *LogTestSuite) TestSetLevel() {
+	suite.Logger.SetLevel(InfoLevel)
+	assert.Equal(suite.T(), log.Level(uint32(InfoLevel)), suite.Logger.logger.GetLevel())
+}
+
+func (suite *LogTestSuite) TestSetLogID() {
+	suite.Logger.SetLogID(suite.logID)
+	assert.NotEqual(suite.T(), "", suite.Logger.field.LogID)
+}
+
+func (suite *LogTestSuite) TestSetEndpoint() {
+	suite.Logger.SetEndpoint(suite.endpoint)
+	assert.Equal(suite.T(), suite.endpoint, suite.Logger.field.Endpoint)
+}
+
+func (suite *LogTestSuite) TestSetMethod() {
+	suite.Logger.SetMethod("GET")
+	assert.Equal(suite.T(), "GET", suite.Logger.field.Method)
+}
+
+func (suite *LogTestSuite) TestSetRequestBody() {
+	body := `{"greet": "hello world!"}`
+	suite.Logger.SetRequestBody(body)
+	assert.Equal(suite.T(), body, suite.Logger.field.RequestBody)
+}
+
+func (suite *LogTestSuite) TestSetRequestHeader() {
+	header := `"Content-Type": "application/json"`
+	suite.Logger.SetRequestHeaders(header)
+	assert.Equal(suite.T(), header, suite.Logger.field.RequestHeader)
+}
+
+func (suite *LogTestSuite) TestSetResponseBody() {
+	body := `{"greet": "hello world!"}`
+	suite.Logger.SetResponseBody(body)
+	assert.Equal(suite.T(), body, suite.Logger.field.ResponseBody)
+}
+
+func (suite *LogTestSuite) TestSetResponseHeader() {
+	header := `"Content-Type": "application/json"`
+	suite.Logger.SetResponseHeaders(header)
+	assert.Equal(suite.T(), header, suite.Logger.field.ResponseHeader)
+}
+
+func (suite *LogTestSuite) TestSetErrorMessage() {
+	err := "Internal server error"
+	suite.Logger.SetErrorMessage(err)
+	assert.Equal(suite.T(), err, suite.Logger.field.ErrorMessage)
+}
+
+func (suite *LogTestSuite) TestSetErrorTypeErrorMessage() {
+	err := errors.New("Internal server error")
+	suite.Logger.SetErrorMessage(err)
+	assert.Equal(suite.T(), err, suite.Logger.field.ErrorMessage)
 }
 
 func TestLogTestSuite(t *testing.T) {
