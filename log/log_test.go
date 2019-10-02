@@ -93,8 +93,8 @@ func (suite *LogTestSuite) TestLogBuilder() {
 		SetLogID(suite.logID).
 		SetEndpoint(suite.url).
 		SetMethod("GET").
-		SetRequestBody(nil).SetRequestHeaders(nil).
 		SetRequestBody(nil).
+		SetRequestHeaders(nil).
 		SetResponseBody(string(b)).
 		SetResponseHeaders(resp.Header).
 		SetErrorMessage(errors.New("Error in code 2123123"))
