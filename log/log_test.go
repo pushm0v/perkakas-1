@@ -65,8 +65,7 @@ func (suite *LogTestSuite) TestLog() {
 		ResponseHeader: resp.Header,
 		ErrorMessage:   "Error",
 	}
-	suite.Logger.Set(fields)
-	suite.Logger.Error("testlog")
+	suite.Logger.Set(fields).Error("testlog")
 	assert.Equal(suite.T(), true, gock.IsDone(), "must be equal")
 }
 

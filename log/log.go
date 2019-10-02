@@ -53,8 +53,9 @@ func (l *Logger) SetLevel(lv Level) {
 	l.logger.Level = log.Level(uint32(lv))
 }
 
-func (l *Logger) Set(field Field) {
+func (l *Logger) Set(field Field) *Logger {
 	l.field = field
+	return l
 }
 
 func (l *Logger) SetLogID(logID string) *Logger {
