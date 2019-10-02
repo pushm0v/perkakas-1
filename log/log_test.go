@@ -66,7 +66,7 @@ func (suite *LogTestSuite) TestLog() {
 		ErrorMessage:   "Error",
 	}
 	suite.Logger.Set(fields)
-	suite.Logger.Log(ErrorLevel, "testlog")
+	suite.Logger.Error("testlog")
 	assert.Equal(suite.T(), true, gock.IsDone(), "must be equal")
 }
 
@@ -98,7 +98,7 @@ func (suite *LogTestSuite) TestLogBuilder() {
 		SetResponseBody(string(b)).
 		SetResponseHeaders(resp.Header).
 		SetErrorMessage(errors.New("Error in code 2123123"))
-	suite.Logger.Log(InfoLevel, "testlog")
+	suite.Logger.Info(InfoLevel, "testlog")
 	assert.Equal(suite.T(), true, gock.IsDone(), "must be equal")
 }
 

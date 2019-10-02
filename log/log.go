@@ -97,7 +97,35 @@ func (l *Logger) SetErrorMessage(errorMessage interface{}) *Logger {
 	return l
 }
 
-func (l *Logger) Log(lv Level, args ...interface{}) {
+func (l *Logger) Trace(args ...interface{}) {
+	l.log(TraceLevel, args...)
+}
+
+func (l *Logger) Debug(args ...interface{}) {
+	l.log(DebugLevel, args...)
+}
+
+func (l *Logger) Info(args ...interface{}) {
+	l.log(InfoLevel, args...)
+}
+
+func (l *Logger) Warn(args ...interface{}) {
+	l.log(WarnLevel, args...)
+}
+
+func (l *Logger) Error(args ...interface{}) {
+	l.log(ErrorLevel, args...)
+}
+
+func (l *Logger) Fatal(args ...interface{}) {
+	l.log(FatalLevel, args...)
+}
+
+func (l *Logger) Panic(args ...interface{}) {
+	l.log(PanicLevel, args...)
+}
+
+func (l *Logger) log(lv Level, args ...interface{}) {
 	l.fields = map[string]interface{}{
 		FieldLogID:           l.field.LogID,
 		FieldEndpoint:        l.field.Endpoint,
@@ -136,7 +164,7 @@ func newLog(formatter log.Formatter, out io.Writer, level log.Level, reportCalle
 
 func setCaller(fields map[string]interface{}) {
 	if fields[FieldErrorMessage] != nil && fields[FieldErrorMessage] != "" {
-		if pc, file, line, ok := runtime.Caller(2); ok {
+		if pc, file, line, ok := runtime.Caller(3); ok {
 			fName := runtime.FuncForPC(pc).Name()
 			fields["file"] = file
 			fields["line"] = line
