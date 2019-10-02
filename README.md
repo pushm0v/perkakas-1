@@ -24,7 +24,7 @@ Example:
 		ErrorMessage:   nil, // expected to be string or error type
 	}
 	logger.Set(fields)
-	logger.Log(InfoLevel, "log message")
+	logger.Info("log message")
 }
 ```
 
@@ -42,6 +42,6 @@ Example 2 - Create logger with builder (chaining):
 		SetResponseHeaders(resp.Header).
 		SetErrorMessage(errors.New("Error in code 2123123"))
 	logger.Set(fields)
-	logger.Log(InfoLevel, "log message")
+	logger.Info("log message")
 
 ```
