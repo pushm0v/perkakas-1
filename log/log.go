@@ -55,6 +55,8 @@ func (l *Logger) SetLevel(lv Level) {
 
 func (l *Logger) Set(field Field) *Logger {
 	l.field = field
+	l.setCaller(field.ErrorMessage)
+
 	return l
 }
 
@@ -95,6 +97,8 @@ func (l *Logger) SetResponseHeaders(headers interface{}) *Logger {
 
 func (l *Logger) SetErrorMessage(errorMessage interface{}) *Logger {
 	l.field.ErrorMessage = errorMessage
+	l.setCaller(errorMessage)
+
 	return l
 }
 
@@ -127,18 +131,14 @@ func (l *Logger) Panic(args ...interface{}) {
 }
 
 func (l *Logger) log(lv Level, args ...interface{}) {
-	l.fields = map[string]interface{}{
-		FieldLogID:           l.field.LogID,
-		FieldEndpoint:        l.field.Endpoint,
-		FieldMethod:          l.field.Method,
-		FieldRequestBody:     l.field.RequestBody,
-		FieldRequestHeaders:  l.field.RequestHeader,
-		FieldResponseBody:    l.field.ResponseBody,
-		FieldResponseHeaders: l.field.ResponseHeader,
-		FieldErrorMessage:    l.field.ErrorMessage,
-	}
-
-	setCaller(l.fields)
+	l.fields[FieldLogID] = l.field.LogID
+	l.fields[FieldEndpoint] = l.field.Endpoint
+	l.fields[FieldMethod] = l.field.Method
+	l.fields[FieldRequestBody] = l.field.RequestBody
+	l.fields[FieldRequestHeaders] = l.field.RequestHeader
+	l.fields[FieldResponseBody] = l.field.ResponseBody
+	l.fields[FieldResponseHeaders] = l.field.ResponseHeader
+	l.fields[FieldErrorMessage] = l.field.ErrorMessage
 
 	entry := l.logger.WithFields(l.fields)
 
@@ -153,6 +153,17 @@ func (l *Logger) log(lv Level, args ...interface{}) {
 	return
 }
 
+func (l *Logger) setCaller(errorMessage interface{}) {
+	if errorMessage != nil && errorMessage != "" {
+		if pc, file, line, ok := runtime.Caller(2); ok {
+			fName := runtime.FuncForPC(pc).Name()
+			l.fields["file"] = file
+			l.fields["line"] = line
+			l.fields["func"] = fName
+		}
+	}
+}
+
 func newLog(formatter log.Formatter, out io.Writer, level log.Level, reportCaller bool) (l *log.Logger) {
 	l = log.New()
 	l.SetFormatter(formatter)
@@ -161,17 +172,6 @@ func newLog(formatter log.Formatter, out io.Writer, level log.Level, reportCalle
 	l.SetReportCaller(reportCaller)
 
 	return
-}
-
-func setCaller(fields map[string]interface{}) {
-	if fields[FieldErrorMessage] != nil && fields[FieldErrorMessage] != "" {
-		if pc, file, line, ok := runtime.Caller(3); ok {
-			fName := runtime.FuncForPC(pc).Name()
-			fields["file"] = file
-			fields["line"] = line
-			fields["func"] = fName
-		}
-	}
 }
 
 func NewLogger() (logger *Logger) {
