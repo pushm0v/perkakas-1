@@ -19,7 +19,8 @@ const (
 	FieldRequestHeaders  = "request_headers"
 	FieldResponseBody    = "response_body"
 	FieldResponseHeaders = "response_headers"
-	FieldErrorMessage    = "error_message"
+	FieldMessage         = "custom_message"
+	FieldLevel           = "message_level"
 )
 
 const (
@@ -39,6 +40,7 @@ type Logger struct {
 }
 
 type Field struct {
+	// LogID, should be unique id
 	LogID          string
 	Endpoint       string
 	Method         string
@@ -46,16 +48,20 @@ type Field struct {
 	RequestHeader  interface{}
 	ResponseBody   interface{}
 	ResponseHeader interface{}
-	ErrorMessage   interface{}
+
+	// Log level when print
+	Level   Level
+	Message interface{}
 }
 
-func (l *Logger) SetLevel(lv Level) {
+// Set default logger level
+func (l *Logger) SetLoggerLevel(lv Level) {
 	l.logger.Level = log.Level(uint32(lv))
 }
 
 func (l *Logger) Set(field Field) *Logger {
 	l.field = field
-	l.setCaller(field.ErrorMessage)
+	l.setCaller(l.field.Message)
 
 	return l
 }
@@ -95,42 +101,15 @@ func (l *Logger) SetResponseHeaders(headers interface{}) *Logger {
 	return l
 }
 
-func (l *Logger) SetErrorMessage(errorMessage interface{}) *Logger {
-	l.field.ErrorMessage = errorMessage
-	l.setCaller(errorMessage)
+func (l *Logger) SetMessage(level Level, message interface{}) *Logger {
+	l.field.Message = message
+	l.field.Level = level
+	l.setCaller(l.field.Message)
 
 	return l
 }
 
-func (l *Logger) Trace(args ...interface{}) {
-	l.log(TraceLevel, args...)
-}
-
-func (l *Logger) Debug(args ...interface{}) {
-	l.log(DebugLevel, args...)
-}
-
-func (l *Logger) Info(args ...interface{}) {
-	l.log(InfoLevel, args...)
-}
-
-func (l *Logger) Warn(args ...interface{}) {
-	l.log(WarnLevel, args...)
-}
-
-func (l *Logger) Error(args ...interface{}) {
-	l.log(ErrorLevel, args...)
-}
-
-func (l *Logger) Fatal(args ...interface{}) {
-	l.log(FatalLevel, args...)
-}
-
-func (l *Logger) Panic(args ...interface{}) {
-	l.log(PanicLevel, args...)
-}
-
-func (l *Logger) log(lv Level, args ...interface{}) {
+func (l *Logger) Print(args ...interface{}) {
 	l.fields[FieldLogID] = l.field.LogID
 	l.fields[FieldEndpoint] = l.field.Endpoint
 	l.fields[FieldMethod] = l.field.Method
@@ -138,17 +117,18 @@ func (l *Logger) log(lv Level, args ...interface{}) {
 	l.fields[FieldRequestHeaders] = l.field.RequestHeader
 	l.fields[FieldResponseBody] = l.field.ResponseBody
 	l.fields[FieldResponseHeaders] = l.field.ResponseHeader
-	l.fields[FieldErrorMessage] = l.field.ErrorMessage
+	l.fields[FieldLevel] = l.field.Level
+	l.fields[FieldMessage] = l.field.Message
 
 	entry := l.logger.WithFields(l.fields)
 
-	if lv > WarnLevel {
+	if l.field.Level > WarnLevel {
 		entry.Logger.SetOutput(os.Stdout)
 	} else {
 		entry.Logger.SetOutput(os.Stderr)
 	}
 
-	entry.Logln(log.Level(uint32(lv)), args...)
+	entry.Logln(log.Level(uint32(l.field.Level)), args...)
 	l.field = Field{}
 	return
 }
@@ -177,6 +157,10 @@ func newLog(formatter log.Formatter, out io.Writer, level log.Level, reportCalle
 func NewLogger() (logger *Logger) {
 	formatter := &log.JSONFormatter{
 		TimestampFormat: time.RFC3339,
+		FieldMap: log.FieldMap{
+			log.FieldKeyMsg: "log_message",
+		},
+		DisableTimestamp: true,
 	}
 
 	newLogger := newLog(formatter, os.Stdout, log.TraceLevel, false)

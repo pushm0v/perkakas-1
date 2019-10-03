@@ -63,9 +63,10 @@ func (suite *LogTestSuite) TestLog() {
 		RequestHeader:  nil,
 		ResponseBody:   string(b),
 		ResponseHeader: resp.Header,
-		ErrorMessage:   "Error",
+		Message:        "Error",
+		Level:          ErrorLevel,
 	}
-	suite.Logger.Set(fields).Error("testlog")
+	suite.Logger.Set(fields).Print("testlog")
 	assert.Equal(suite.T(), true, gock.IsDone(), "must be equal")
 }
 
@@ -87,7 +88,7 @@ func (suite *LogTestSuite) TestLogBuilder() {
 		suite.FailNow(err.Error())
 	}
 
-	suite.Logger.SetLevel(InfoLevel)
+	suite.Logger.SetLoggerLevel(InfoLevel)
 	suite.Logger.
 		SetLogID(suite.logID).
 		SetEndpoint(suite.url).
@@ -96,13 +97,13 @@ func (suite *LogTestSuite) TestLogBuilder() {
 		SetRequestHeaders(nil).
 		SetResponseBody(string(b)).
 		SetResponseHeaders(resp.Header).
-		SetErrorMessage(errors.New("Error in code 2123123"))
-	suite.Logger.Info(InfoLevel, "testlog")
+		SetMessage(InfoLevel, errors.New("Error in code 2123123")).
+		Print("testlog")
 	assert.Equal(suite.T(), true, gock.IsDone(), "must be equal")
 }
 
 func (suite *LogTestSuite) TestSetLevel() {
-	suite.Logger.SetLevel(InfoLevel)
+	suite.Logger.SetLoggerLevel(InfoLevel)
 	assert.Equal(suite.T(), log.Level(uint32(InfoLevel)), suite.Logger.logger.GetLevel())
 }
 
@@ -147,14 +148,14 @@ func (suite *LogTestSuite) TestSetResponseHeader() {
 
 func (suite *LogTestSuite) TestSetErrorMessage() {
 	err := "Internal server error"
-	suite.Logger.SetErrorMessage(err)
-	assert.Equal(suite.T(), err, suite.Logger.field.ErrorMessage)
+	suite.Logger.SetMessage(InfoLevel, err)
+	assert.Equal(suite.T(), err, suite.Logger.field.Message)
 }
 
 func (suite *LogTestSuite) TestSetErrorTypeErrorMessage() {
 	err := errors.New("Internal server error")
-	suite.Logger.SetErrorMessage(err)
-	assert.Equal(suite.T(), err, suite.Logger.field.ErrorMessage)
+	suite.Logger.SetMessage(InfoLevel, err)
+	assert.Equal(suite.T(), err, suite.Logger.field.Message)
 }
 
 func TestLogTestSuite(t *testing.T) {

@@ -11,37 +11,36 @@ How to develop on perkakas:
 ## Log
 Example:
 ```
-	logger := NewLogger()
-	 
-	fields := Field{
-		LogID:          "90744197-c2d9-46a0-b9cd-26e1fc2a4cbf", // expected to be uuid string, you can use other unique identifier
-		Endpoint:       "http://example.com/query",
-		Method:         "GET",
-		RequestBody:    nil, // this should be filled when do POST request
-		RequestHeader:  nil, // this should be filled when do POST request 
-		ResponseBody:   `{"id": "gas976df97as6d", "name": "perkakas"}`, // get the value from resp.Body when you call http request, or response you give for your client
-		ResponseHeader: `resp.Header`, // get the value from resp.Header
-		ErrorMessage:   nil, // expected to be string or error type
-	}
-	logger.Set(fields)
-	logger.Info("log message")
+logger := NewLogger()
+
+fields := Field{
+	LogID:          suite.logID,
+	Endpoint:       suite.url,
+	Method:         "GET",
+	RequestBody:    nil,
+	RequestHeader:  nil,
+	ResponseBody:   string(b),
+	ResponseHeader: resp.Header,
+	Message:        "Error",
+	Level:          ErrorLevel,
 }
+
+logger.Set(fields).Print("testlog")	 
 ```
 
 Example 2 - Create logger with builder (chaining):
 ```
-	logger := NewLogger()
-	 
-	logger.
-		SetLogID("90744197-c2d9-46a0-b9cd-26e1fc2a4cbf").
-		SetEndpoint("http://example.com/query").
-		SetMethod("GET").
-		SetRequestBody(nil).
-        SetRequestHeaders(nil).
-		SetResponseBody(`{"id": "gas976df97as6d", "name": "perkakas"}`).
-		SetResponseHeaders(resp.Header).
-		SetErrorMessage(errors.New("Error in code 2123123"))
-	logger.Set(fields)
-	logger.Info("log message")
-
+logger := NewLogger()
+	
+logger.SetLoggerLevel(InfoLevel)
+logger.
+	SetLogID(suite.logID).
+	SetEndpoint(suite.url).
+	SetMethod("GET").
+	SetRequestBody(nil).
+	SetRequestHeaders(nil).
+	SetResponseBody(string(b)).
+	SetResponseHeaders(resp.Header).
+	SetMessage(InfoLevel, errors.New("Error in code 2123123")).
+	Print("testlog")
 ```
