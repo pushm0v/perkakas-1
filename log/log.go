@@ -1,9 +1,11 @@
 package log
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"runtime"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -19,9 +21,15 @@ const (
 	FieldRequestHeaders  = "request_headers"
 	FieldResponseBody    = "response_body"
 	FieldResponseHeaders = "response_headers"
-	FieldMessage         = "custom_message"
-	FieldLevel           = "message_level"
 )
+
+type message struct {
+	Message  interface{} `json:"message"`
+	Level    Level       `json:"level"`
+	File     string      `json:"file"`
+	FuncName string      `json:"func"`
+	Line     int         `json:"line"`
+}
 
 const (
 	PanicLevel Level = iota
@@ -32,6 +40,68 @@ const (
 	DebugLevel
 	TraceLevel
 )
+
+func (level Level) String() string {
+	if b, err := level.MarshalText(); err == nil {
+		return string(b)
+	} else {
+		return "unknown"
+	}
+}
+
+func parseLevel(lvl string) (Level, error) {
+	switch strings.ToLower(lvl) {
+	case "panic":
+		return PanicLevel, nil
+	case "fatal":
+		return FatalLevel, nil
+	case "error":
+		return ErrorLevel, nil
+	case "warn", "warning":
+		return WarnLevel, nil
+	case "info":
+		return InfoLevel, nil
+	case "debug":
+		return DebugLevel, nil
+	case "trace":
+		return TraceLevel, nil
+	}
+
+	var l Level
+	return l, fmt.Errorf("not a valid logrus Level: %q", lvl)
+}
+
+func (level *Level) UnmarshalText(text []byte) error {
+	l, err := parseLevel(string(text))
+	if err != nil {
+		return err
+	}
+
+	*level = Level(l)
+
+	return nil
+}
+
+func (level Level) MarshalText() ([]byte, error) {
+	switch level {
+	case TraceLevel:
+		return []byte("trace"), nil
+	case DebugLevel:
+		return []byte("debug"), nil
+	case InfoLevel:
+		return []byte("info"), nil
+	case WarnLevel:
+		return []byte("warning"), nil
+	case ErrorLevel:
+		return []byte("error"), nil
+	case FatalLevel:
+		return []byte("fatal"), nil
+	case PanicLevel:
+		return []byte("panic"), nil
+	}
+
+	return nil, fmt.Errorf("not a valid logrus level %d", level)
+}
 
 type Logger struct {
 	logger *log.Logger
@@ -48,22 +118,6 @@ type Field struct {
 	RequestHeader  interface{}
 	ResponseBody   interface{}
 	ResponseHeader interface{}
-
-	// Log level when print
-	Level   Level
-	Message interface{}
-}
-
-// Set default logger level
-func (l *Logger) SetLoggerLevel(lv Level) {
-	l.logger.Level = log.Level(uint32(lv))
-}
-
-func (l *Logger) Set(field Field) *Logger {
-	l.field = field
-	l.setCaller(l.field.Message)
-
-	return l
 }
 
 func (l *Logger) SetLogID(logID string) *Logger {
@@ -101,47 +155,74 @@ func (l *Logger) SetResponseHeaders(headers interface{}) *Logger {
 	return l
 }
 
-func (l *Logger) SetMessage(level Level, message interface{}) *Logger {
-	l.field.Message = message
-	l.field.Level = level
-	l.setCaller(l.field.Message)
-
+func (l *Logger) AddMessage(level Level, message interface{}) *Logger {
+	l.setCaller(message, level)
 	return l
 }
 
-func (l *Logger) Print(args ...interface{}) {
-	l.fields[FieldLogID] = l.field.LogID
-	l.fields[FieldEndpoint] = l.field.Endpoint
-	l.fields[FieldMethod] = l.field.Method
-	l.fields[FieldRequestBody] = l.field.RequestBody
-	l.fields[FieldRequestHeaders] = l.field.RequestHeader
-	l.fields[FieldResponseBody] = l.field.ResponseBody
-	l.fields[FieldResponseHeaders] = l.field.ResponseHeader
-	l.fields[FieldLevel] = l.field.Level
-	l.fields[FieldMessage] = l.field.Message
+func (l *Logger) Print() {
+	fill := fillField(l.fields)
+	fill(FieldLogID, l.field.LogID)
+	fill(FieldEndpoint, l.field.Endpoint)
+	fill(FieldMethod, l.field.Method)
+	fill(FieldRequestBody, l.field.RequestBody)
+	fill(FieldRequestHeaders, l.field.RequestHeader)
+	fill(FieldResponseBody, l.field.ResponseBody)
+	fill(FieldResponseHeaders, l.field.ResponseHeader)
 
 	entry := l.logger.WithFields(l.fields)
 
-	if l.field.Level > WarnLevel {
-		entry.Logger.SetOutput(os.Stdout)
-	} else {
-		entry.Logger.SetOutput(os.Stderr)
-	}
-
-	entry.Logln(log.Level(uint32(l.field.Level)), args...)
+	messages := ensureStackType(l.fields["stack"])
+	entry.Tracef("%+v", messages[0].Message)
 	l.field = Field{}
 	return
 }
 
-func (l *Logger) setCaller(errorMessage interface{}) {
-	if errorMessage != nil && errorMessage != "" {
+func (l *Logger) setCaller(msg interface{}, level Level) {
+	if msg != nil && msg != "" {
 		if pc, file, line, ok := runtime.Caller(2); ok {
 			fName := runtime.FuncForPC(pc).Name()
-			l.fields["file"] = file
-			l.fields["line"] = line
-			l.fields["func"] = fName
+
+			err, ok := msg.(error)
+			if ok && err != nil {
+				msg = err.Error()
+			}
+
+			msg := message{
+				Message:  msg,
+				Level:    level,
+				File:     file,
+				FuncName: fName,
+				Line:     line,
+			}
+
+			l.addMessageStack(msg)
 		}
 	}
+}
+
+func (l *Logger) addMessageStack(msg message) {
+	stack := ensureStackType(l.fields["stack"])
+	l.fields["stack"] = append(stack, msg)
+}
+
+func fillField(m map[string]interface{}) func(string, interface{}) {
+	return func(key string, val interface{}) {
+		if val == nil {
+			return
+		}
+
+		m[key] = val
+	}
+}
+
+func ensureStackType(stack interface{}) (val []message) {
+	val, ok := stack.([]message)
+	if !ok {
+		panic("perkakas/log: stack trace is expecting a message but found other types")
+	}
+
+	return
 }
 
 func newLog(formatter log.Formatter, out io.Writer, level log.Level, reportCaller bool) (l *log.Logger) {
@@ -149,7 +230,6 @@ func newLog(formatter log.Formatter, out io.Writer, level log.Level, reportCalle
 	l.SetFormatter(formatter)
 	l.SetOutput(out)
 	l.SetLevel(level)
-	l.SetReportCaller(reportCaller)
 
 	return
 }
@@ -157,6 +237,7 @@ func newLog(formatter log.Formatter, out io.Writer, level log.Level, reportCalle
 func NewLogger() (logger *Logger) {
 	formatter := &log.JSONFormatter{
 		TimestampFormat: time.RFC3339,
+		// PrettyPrint:     true,
 		FieldMap: log.FieldMap{
 			log.FieldKeyMsg: "log_message",
 		},
@@ -168,6 +249,7 @@ func NewLogger() (logger *Logger) {
 	logger = new(Logger)
 	logger.logger = newLogger
 	logger.fields = make(map[string]interface{})
+	logger.fields["stack"] = []message{}
 
 	return
 }
