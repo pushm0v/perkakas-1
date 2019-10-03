@@ -109,7 +109,6 @@ func (l *Logger) SetMessage(level Level, message interface{}) *Logger {
 	return l
 }
 
-// func (l *Logger) Log(lv Level, args ...interface{}) {
 func (l *Logger) Print(args ...interface{}) {
 	l.fields[FieldLogID] = l.field.LogID
 	l.fields[FieldEndpoint] = l.field.Endpoint
