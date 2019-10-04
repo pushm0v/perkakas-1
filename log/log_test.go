@@ -36,10 +36,14 @@ func (suite *LogTestSuite) SetupTest() {
 	}
 }
 
-func (suite *LogTestSuite) TestLogBuilder() {
+func (suite *LogTestSuite) TestEmptyLog() {
+	suite.Logger.Print()
+}
+
+func (suite *LogTestSuite) TestLog() {
 	defer gock.Off()
 
-	gock.New(suite.host).
+	req := gock.New(suite.host).
 		Get(suite.endpoint).
 		Reply(200).
 		AddHeader("X-Test-Response", "Hello").
@@ -54,73 +58,20 @@ func (suite *LogTestSuite) TestLogBuilder() {
 		suite.FailNow(err.Error())
 	}
 
-	suite.Logger.
-		SetLogID(suite.logID).
-		SetEndpoint(suite.url).
-		SetMethod("GET").
-		SetRequestBody(nil).
-		SetRequestHeaders(nil).
-		SetResponseBody(string(b)).
-		SetResponseHeaders(resp.Header).
-		AddMessage(PanicLevel, 12312312312).
-		AddMessage(FatalLevel, errors.New("Fatal in code asdfasdfsad")).
-		AddMessage(ErrorLevel, errors.New("Error in code 2123123")).
-		AddMessage(WarnLevel, "Warning 1231234").
-		AddMessage(InfoLevel, "Info adfadsfasdf").
-		AddMessage(DebugLevel, "Debug adfadsfasdf").
-		AddMessage(TraceLevel, "Trace adfadsfasdf").
-		Print()
+	suite.Logger.SetRequest(req)
+	suite.Logger.SetResponse(resp, string(b))
+	suite.Logger.AddMessage(TraceLevel, "This is trace")
+	suite.Logger.AddMessage(DebugLevel, "This is debug")
+	suite.Logger.AddMessage(InfoLevel, "This is info")
+	suite.Logger.AddMessage(WarnLevel, "This is warning")
+	suite.Logger.AddMessage(ErrorLevel, errors.New("This is error"))
+	suite.Logger.AddMessage(FatalLevel, "This is fatal")
+	suite.Logger.AddMessage(PanicLevel, "This is panic")
+	suite.Logger.Print()
 	assert.Equal(suite.T(), true, gock.IsDone(), "must be equal")
 }
 
-func (suite *LogTestSuite) TestSetLogID() {
-	suite.T().Skip()
-	suite.Logger.SetLogID(suite.logID)
-	assert.NotEqual(suite.T(), "", suite.Logger.field.LogID)
-}
-
-func (suite *LogTestSuite) TestSetEndpoint() {
-	suite.T().Skip()
-	suite.Logger.SetEndpoint(suite.endpoint)
-	assert.Equal(suite.T(), suite.endpoint, suite.Logger.field.Endpoint)
-}
-
-func (suite *LogTestSuite) TestSetMethod() {
-	suite.T().Skip()
-	suite.Logger.SetMethod("GET")
-	assert.Equal(suite.T(), "GET", suite.Logger.field.Method)
-}
-
-func (suite *LogTestSuite) TestSetRequestBody() {
-	suite.T().Skip()
-	body := `{"greet": "hello world!"}`
-	suite.Logger.SetRequestBody(body)
-	assert.Equal(suite.T(), body, suite.Logger.field.RequestBody)
-}
-
-func (suite *LogTestSuite) TestSetRequestHeader() {
-	suite.T().Skip()
-	header := `"Content-Type": "application/json"`
-	suite.Logger.SetRequestHeaders(header)
-	assert.Equal(suite.T(), header, suite.Logger.field.RequestHeader)
-}
-
-func (suite *LogTestSuite) TestSetResponseBody() {
-	suite.T().Skip()
-	body := `{"greet": "hello world!"}`
-	suite.Logger.SetResponseBody(body)
-	assert.Equal(suite.T(), body, suite.Logger.field.ResponseBody)
-}
-
-func (suite *LogTestSuite) TestSetResponseHeader() {
-	suite.T().Skip()
-	header := `"Content-Type": "application/json"`
-	suite.Logger.SetResponseHeaders(header)
-	assert.Equal(suite.T(), header, suite.Logger.field.ResponseHeader)
-}
-
 func (suite *LogTestSuite) TestMessageStackType() {
-	suite.T().Skip()
 	message := map[string]interface{}{
 		"id": "12345",
 	}

@@ -3,12 +3,15 @@ package log
 import (
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"runtime"
-	"strings"
 	"time"
 
+	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/kitabisa/perkakas/httputil"
 )
 
 type Level uint32
@@ -41,47 +44,6 @@ const (
 	TraceLevel
 )
 
-func (level Level) String() string {
-	if b, err := level.MarshalText(); err == nil {
-		return string(b)
-	} else {
-		return "unknown"
-	}
-}
-
-func parseLevel(lvl string) (Level, error) {
-	switch strings.ToLower(lvl) {
-	case "panic":
-		return PanicLevel, nil
-	case "fatal":
-		return FatalLevel, nil
-	case "error":
-		return ErrorLevel, nil
-	case "warn", "warning":
-		return WarnLevel, nil
-	case "info":
-		return InfoLevel, nil
-	case "debug":
-		return DebugLevel, nil
-	case "trace":
-		return TraceLevel, nil
-	}
-
-	var l Level
-	return l, fmt.Errorf("not a valid logrus Level: %q", lvl)
-}
-
-func (level *Level) UnmarshalText(text []byte) error {
-	l, err := parseLevel(string(text))
-	if err != nil {
-		return err
-	}
-
-	*level = Level(l)
-
-	return nil
-}
-
 func (level Level) MarshalText() ([]byte, error) {
 	switch level {
 	case TraceLevel:
@@ -104,55 +66,35 @@ func (level Level) MarshalText() ([]byte, error) {
 }
 
 type Logger struct {
-	logger *log.Logger
-	field  Field
-	fields log.Fields
+	logger           *log.Logger
+	fields           log.Fields
+	autoGenRequestID bool
 }
 
-type Field struct {
-	// LogID, should be unique id
-	LogID          string
-	Endpoint       string
-	Method         string
-	RequestBody    interface{}
-	RequestHeader  interface{}
-	ResponseBody   interface{}
-	ResponseHeader interface{}
+func (l *Logger) SetRequest(req interface{}) {
+	l.fields[FieldLogID] = uuid.NewV1().String()
+
+	switch v := req.(type) {
+	case *http.Request:
+		l.fields[FieldEndpoint] = v.URL.String()
+		l.fields[FieldMethod] = v.Method
+		l.fields[FieldRequestHeaders] = v.Header
+
+		switch v.Method {
+		case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
+			l.fields[FieldRequestBody] = httputil.ReadRequestBody(v)
+		}
+	default:
+		l.fields[FieldRequestBody] = req
+	}
 }
 
-func (l *Logger) SetLogID(logID string) *Logger {
-	l.field.LogID = logID
-	return l
-}
-
-func (l *Logger) SetEndpoint(endpoint string) *Logger {
-	l.field.Endpoint = endpoint
-	return l
-}
-
-func (l *Logger) SetMethod(method string) *Logger {
-	l.field.Method = method
-	return l
-}
-
-func (l *Logger) SetRequestBody(body interface{}) *Logger {
-	l.field.RequestBody = body
-	return l
-}
-
-func (l *Logger) SetRequestHeaders(headers interface{}) *Logger {
-	l.field.RequestHeader = headers
-	return l
-}
-
-func (l *Logger) SetResponseBody(body interface{}) *Logger {
-	l.field.ResponseBody = body
-	return l
-}
-
-func (l *Logger) SetResponseHeaders(headers interface{}) *Logger {
-	l.field.ResponseHeader = headers
-	return l
+func (l *Logger) SetResponse(res interface{}, body interface{}) {
+	switch v := res.(type) {
+	case *http.Response:
+		l.fields[FieldResponseHeaders] = v.Header
+		l.fields[FieldResponseBody] = body
+	}
 }
 
 func (l *Logger) AddMessage(level Level, message interface{}) *Logger {
@@ -161,21 +103,14 @@ func (l *Logger) AddMessage(level Level, message interface{}) *Logger {
 }
 
 func (l *Logger) Print() {
-	fill := fillField(l.fields)
-	fill(FieldLogID, l.field.LogID)
-	fill(FieldEndpoint, l.field.Endpoint)
-	fill(FieldMethod, l.field.Method)
-	fill(FieldRequestBody, l.field.RequestBody)
-	fill(FieldRequestHeaders, l.field.RequestHeader)
-	fill(FieldResponseBody, l.field.ResponseBody)
-	fill(FieldResponseHeaders, l.field.ResponseHeader)
+	messages := ensureStackType(l.fields["stack"])
+	if len(messages) == 0 || len(l.fields) == 0 {
+		return
+	}
 
 	entry := l.logger.WithFields(l.fields)
-
-	messages := ensureStackType(l.fields["stack"])
 	entry.Tracef("%+v", messages[0].Message)
-	l.field = Field{}
-	return
+	l.fields = make(map[string]interface{})
 }
 
 func (l *Logger) setCaller(msg interface{}, level Level) {
@@ -204,16 +139,6 @@ func (l *Logger) setCaller(msg interface{}, level Level) {
 func (l *Logger) addMessageStack(msg message) {
 	stack := ensureStackType(l.fields["stack"])
 	l.fields["stack"] = append(stack, msg)
-}
-
-func fillField(m map[string]interface{}) func(string, interface{}) {
-	return func(key string, val interface{}) {
-		if val == nil {
-			return
-		}
-
-		m[key] = val
-	}
 }
 
 func ensureStackType(stack interface{}) (val []message) {
