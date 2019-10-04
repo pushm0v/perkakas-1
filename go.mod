@@ -1,4 +1,4 @@
-module github.com/kitabisa/perkakas
+module github.com/kitabisa/perkakas/v2
 
 go 1.13
 
