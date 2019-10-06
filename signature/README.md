@@ -1,4 +1,3 @@
-## Signature
 # Signature
 
 This module will help you creata HMAC signature based on sha256 & secret key.
