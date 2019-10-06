@@ -12,6 +12,6 @@ require (
 	github.com/stretchr/testify v1.2.2
 	golang.org/x/tools v0.0.0-20191001184121-329c8d646ebe // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
-	gopkg.in/go-playground/validator.v9 v9.29.1
+	gopkg.in/go-playground/validator.v9 v9.29.1 // indirect
 	gopkg.in/h2non/gock.v1 v1.0.15
 )
