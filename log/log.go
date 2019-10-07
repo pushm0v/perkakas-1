@@ -11,7 +11,7 @@ import (
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/kitabisa/perkakas/httputil"
+	"github.com/kitabisa/perkakas/v2/httputil"
 )
 
 type Level uint32
