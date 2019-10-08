@@ -173,7 +173,6 @@ func newLogger(logID string) (logger *Logger) {
 		FieldMap: log.FieldMap{
 			log.FieldKeyMsg: "log_message",
 		},
-		DisableTimestamp: true,
 	}
 
 	newLogger := newLog(formatter, os.Stdout, log.TraceLevel, false)
