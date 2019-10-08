@@ -114,6 +114,7 @@ func (l *Logger) Print() {
 	entry := l.logger.WithFields(l.fields)
 	entry.Tracef("%+v", messages[0].Message)
 	l.fields = make(map[string]interface{})
+	l.fields["stack"] = []message{}
 }
 
 func (l *Logger) setCaller(msg interface{}, level Level) {
