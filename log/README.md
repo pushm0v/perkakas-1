@@ -8,7 +8,7 @@ Logging level not supported. Level in this logger only for showing the severity 
 Later will support graphql and grpc also.
 Input can also a primitive type, and should be string. It will treat the input as the request body in string.
 
-`SetResponse(resp interface{}, body interface{})` will extract the information for the log from resp, expecting *http.Response.
+`SetResponse(resp interface{}, body []byte)` will extract the information for the log from resp, expecting *http.Response or http.ResponseWriter.
 Body will fill the response body in the log message.
 
 `AddMessage(lv Level, msg interface{})` add message to the logger along with severity level.
@@ -16,7 +16,7 @@ Body will fill the response body in the log message.
 `Print()` print the log message, then flush. When no message added, it will not print anything.
 
 Example:
-```
+```go
 logger := NewLogger()
 	
 logger.SetRequest(req) // req expected as *http.Request
@@ -29,4 +29,9 @@ logger.AddMessage(ErrorLevel, errors.New("This is error"))
 logger.AddMessage(FatalLevel, "This is fatal")
 logger.AddMessage(PanicLevel, "This is panic")
 logger.Print()
+```
+
+Output Example:
+```json
+{"level":"trace","log_id":"7715f1d9-e983-11e9-9b3e-d0c5d396697d","log_message":"This is trace","request_body":{"Mock":{},"Error":null,"UseNetwork":false,"StatusCode":200,"Header":{"Content-Type":["application/json"],"Time":["2019-09-30T10:25:14+07:00"],"X-Test-Response":["Hello"]},"Cookies":null,"BodyBuffer":"eyJpZCI6ImExMjM0LWFiY2QiLCJxdW90ZXMiOiJFdmVyeXRoaW5nIHRoZSBsaWdodCB0b3VjaGVzLCBpcyBvdXIga2luZ2RvbSJ9Cg==","ResponseDelay":0,"Mappers":null,"Filters":null},"response_body":"{\"id\":\"a1234-abcd\",\"quotes\":\"Everything the light touches, is our kingdom\"}\n","response_headers":{"Content-Type":["application/json"],"Time":["2019-09-30T10:25:14+07:00"],"X-Test-Response":["Hello"]},"stack":[{"message":"This is trace","level":"trace","file":"/data/works/perkakas/log/log_test.go","func":"github.com/kitabisa/perkakas/v2/log.(*LogTestSuite).TestLog","line":63},{"message":"This is debug","level":"debug","file":"/data/works/perkakas/log/log_test.go","func":"github.com/kitabisa/perkakas/v2/log.(*LogTestSuite).TestLog","line":64},{"message":"This is info","level":"info","file":"/data/works/perkakas/log/log_test.go","func":"github.com/kitabisa/perkakas/v2/log.(*LogTestSuite).TestLog","line":65},{"message":"This is warning","level":"warning","file":"/data/works/perkakas/log/log_test.go","func":"github.com/kitabisa/perkakas/v2/log.(*LogTestSuite).TestLog","line":66},{"message":"This is error","level":"error","file":"/data/works/perkakas/log/log_test.go","func":"github.com/kitabisa/perkakas/v2/log.(*LogTestSuite).TestLog","line":67},{"message":"This is fatal","level":"fatal","file":"/data/works/perkakas/log/log_test.go","func":"github.com/kitabisa/perkakas/v2/log.(*LogTestSuite).TestLog","line":68},{"message":"This is panic","level":"panic","file":"/data/works/perkakas/log/log_test.go","func":"github.com/kitabisa/perkakas/v2/log.(*LogTestSuite).TestLog","line":69}]}
 ```
