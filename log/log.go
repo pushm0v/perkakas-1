@@ -89,14 +89,14 @@ func (l *Logger) SetRequest(req interface{}) {
 	}
 }
 
-func (l *Logger) SetResponse(res interface{}, body interface{}) {
+func (l *Logger) SetResponse(res interface{}, body []byte) {
 	switch v := res.(type) {
 	case http.ResponseWriter:
 		l.fields[FieldResponseHeaders] = v.Header()
-		l.fields[FieldResponseBody] = body
+		l.fields[FieldResponseBody] = string(body)
 	case *http.Response:
 		l.fields[FieldResponseHeaders] = v.Header
-		l.fields[FieldResponseBody] = body
+		l.fields[FieldResponseBody] = string(body)
 	}
 }
 
