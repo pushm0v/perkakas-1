@@ -91,6 +91,9 @@ func (l *Logger) SetRequest(req interface{}) {
 
 func (l *Logger) SetResponse(res interface{}, body interface{}) {
 	switch v := res.(type) {
+	case http.ResponseWriter:
+		l.fields[FieldResponseHeaders] = v.Header()
+		l.fields[FieldResponseBody] = body
 	case *http.Response:
 		l.fields[FieldResponseHeaders] = v.Header
 		l.fields[FieldResponseBody] = body
