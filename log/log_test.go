@@ -59,7 +59,7 @@ func (suite *LogTestSuite) TestLog() {
 	}
 
 	suite.Logger.SetRequest(req)
-	suite.Logger.SetResponse(resp, string(b))
+	suite.Logger.SetResponse(resp, b)
 	suite.Logger.AddMessage(TraceLevel, "This is trace")
 	suite.Logger.AddMessage(DebugLevel, "This is debug")
 	suite.Logger.AddMessage(InfoLevel, "This is info")
