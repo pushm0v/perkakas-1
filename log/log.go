@@ -66,14 +66,17 @@ func (level Level) MarshalText() ([]byte, error) {
 }
 
 type Logger struct {
-	logger           *log.Logger
-	fields           log.Fields
-	autoGenRequestID bool
+	logger *log.Logger
+	fields log.Fields
+	id     string
+}
+
+func (l *Logger) NewChildLogger() (logger *Logger) {
+	logger = newLogger(l.id)
+	return
 }
 
 func (l *Logger) SetRequest(req interface{}) {
-	l.fields[FieldLogID] = uuid.NewV1().String()
-
 	switch v := req.(type) {
 	case *http.Request:
 		l.fields[FieldEndpoint] = v.URL.String()
@@ -163,7 +166,7 @@ func newLog(formatter log.Formatter, out io.Writer, level log.Level, reportCalle
 	return
 }
 
-func NewLogger() (logger *Logger) {
+func newLogger(logID string) (logger *Logger) {
 	formatter := &log.JSONFormatter{
 		TimestampFormat: time.RFC3339,
 		// PrettyPrint:     true,
@@ -180,5 +183,22 @@ func NewLogger() (logger *Logger) {
 	logger.fields = make(map[string]interface{})
 	logger.fields["stack"] = []message{}
 
+	var id string
+
+	if logID == "" {
+		id = uuid.NewV1().String()
+		logger.fields[FieldLogID] = id
+	} else {
+		logger.fields[FieldLogID] = logID
+		id = logID
+	}
+
+	logger.id = id
+
+	return
+}
+
+func NewLogger() (logger *Logger) {
+	logger = newLogger("")
 	return
 }
