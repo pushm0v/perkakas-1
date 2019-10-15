@@ -20,6 +20,7 @@ const (
 	FieldLogID           = "log_id"
 	FieldEndpoint        = "endpoint"
 	FieldMethod          = "method"
+	FieldServiceName     = "service"
 	FieldRequestBody     = "request_body"
 	FieldRequestHeaders  = "request_headers"
 	FieldResponseBody    = "response_body"
@@ -178,7 +179,7 @@ func newLog(formatter log.Formatter, out io.Writer, level log.Level, reportCalle
 	return
 }
 
-func newLogger(logID string) (logger *Logger) {
+func newLogger(serviceName string) (logger *Logger) {
 	formatter := &log.JSONFormatter{
 		TimestampFormat: time.RFC3339,
 		// PrettyPrint:     true,
@@ -197,22 +198,14 @@ func newLogger(logID string) (logger *Logger) {
 	})
 	logger.fields.Store("stack", []message{})
 
-	var id string
-
-	if logID == "" {
-		id = uuid.NewV1().String()
-		logger.fields.Store(FieldLogID, id)
-	} else {
-		logger.fields.Store(FieldLogID, logID)
-		id = logID
-	}
-
+	id := uuid.NewV1().String()
+	logger.fields.Store(FieldLogID, id)
+	logger.fields.Store(FieldServiceName, serviceName)
 	logger.id = id
-
 	return
 }
 
-func NewLogger() (logger *Logger) {
-	logger = newLogger("")
+func NewLogger(serviceName string) (logger *Logger) {
+	logger = newLogger(serviceName)
 	return
 }
