@@ -11,7 +11,7 @@ How to develop on perkakas:
 ## Installation
 
 ```bash
-$ go get https://github.com/kitabisa/perkakas/v2
+$ go get github.com/kitabisa/perkakas/v2
 ```
 
 ## How To Use
