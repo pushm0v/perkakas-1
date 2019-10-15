@@ -12,6 +12,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/kitabisa/perkakas/v2/httputil"
+	"github.com/kitabisa/perkakas/v2/token/jwt"
 )
 
 type Level uint32
@@ -79,6 +80,8 @@ func (l *Logger) NewChildLogger() (logger *Logger) {
 func (l *Logger) SetRequest(req interface{}) {
 	switch v := req.(type) {
 	case *http.Request:
+		token := v.Context().Value("token").(*jwt.UserClaim)
+		l.fields["user_id"] = token.UserID
 		l.fields[FieldEndpoint] = v.URL.String()
 		l.fields[FieldMethod] = v.Method
 		l.fields[FieldRequestHeaders] = v.Header
