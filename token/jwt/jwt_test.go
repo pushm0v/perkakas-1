@@ -47,18 +47,3 @@ func TestParse(t *testing.T) {
 	t.Log(parsedToken.Claims)
 	t.Log(parsedToken.Signature)
 }
-
-// func TestValid(t *testing.T) {
-// 	claims := UserClaim{}
-// 	claims.UserID = 12345
-// 	claims.SecondaryID = "8fae85be-e441-4344-8634-d41f23684146"
-// 	claims.Scopes = []string{"read"}
-// 	claims.ClientID = "apdifuoqpweyr9823u"
-
-// 	jwt := NewJWT(signKey)
-// 	token, err := jwt.Create(claims)
-// 	assert.Nil(t, err, "Error must be nil 1")
-
-// 	valid, err := jwt.Valid(token)
-// 	assert.True(t, valid, err.Error())
-// }

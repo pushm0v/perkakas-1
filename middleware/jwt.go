@@ -27,8 +27,6 @@ func NewJWTMiddleware(hctx phttp.HttpHandlerContext, signKey []byte) *JWTMiddlew
 	}
 }
 
-// func NewHandlerContext()
-
 func (j *JWTMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
 	authorization := r.Header.Get("Authorization")
 	match, err := regexp.MatchString("^Bearer .+", authorization)
@@ -56,19 +54,3 @@ func (j *JWTMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request, next h
 
 	next(w, r.WithContext(ctx))
 }
-
-// func (m *Middleware) IsTokenExpired(err error) bool {
-// 	switch err.(type) {
-// 	case *jwt.ValidationError:
-// 		vErr := err.(*jwt.ValidationError)
-// 		switch vErr.Errors {
-// 		case jwt.ValidationErrorExpired:
-// 			return true
-// 		default:
-// 			return false
-// 		}
-
-// 	default:
-// 		return false
-// 	}
-// }

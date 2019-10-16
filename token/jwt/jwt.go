@@ -47,19 +47,3 @@ func (j *JWT) Valid(token string) (valid bool, err error) {
 	valid = tkn.Valid
 	return
 }
-
-// func (m *Middleware) IsTokenExpired(err error) bool {
-// 	switch err.(type) {
-// 	case *jwt.ValidationError:
-// 		vErr := err.(*jwt.ValidationError)
-// 		switch vErr.Errors {
-// 		case jwt.ValidationErrorExpired:
-// 			return true
-// 		default:
-// 			return false
-// 		}
-
-// 	default:
-// 		return false
-// 	}
-// }
