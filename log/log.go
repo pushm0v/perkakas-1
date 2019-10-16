@@ -9,18 +9,22 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kitabisa/perkakas/v2/httputil"
 	uuid "github.com/satori/go.uuid"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/kitabisa/perkakas/v2/httputil"
+	"github.com/kitabisa/perkakas/v2/token/jwt"
 )
 
 type Level uint32
 
 const (
 	FieldLogID           = "log_id"
+	FieldHTTPStatus      = "http_status"
 	FieldEndpoint        = "endpoint"
 	FieldMethod          = "method"
 	FieldServiceName     = "service"
+	FieldUserID          = "user_id"
 	FieldRequestBody     = "request_body"
 	FieldRequestHeaders  = "request_headers"
 	FieldResponseBody    = "response_body"
@@ -80,6 +84,11 @@ func (l *Logger) NewChildLogger() (logger *Logger) {
 func (l *Logger) SetRequest(req interface{}) {
 	switch v := req.(type) {
 	case *http.Request:
+		token, ok := v.Context().Value("token").(*jwt.UserClaim)
+		if ok {
+			l.fields.Store(FieldUserID, token.UserID)
+		}
+
 		l.fields.Store(FieldEndpoint, v.URL.String())
 		l.fields.Store(FieldMethod, v.Method)
 		l.fields.Store(FieldRequestHeaders, v.Header)
