@@ -1,30 +1,27 @@
 package structs
 
-import "encoding/json"
+import (
+	"net/http"
+)
 
-// type StatusError struct {
-// 	Code       int
-// 	Err        error
-// 	ThirdParty bool
-// }
-
-// func (se StatusError) Error() string {
-// 	return se.Err.Error()
-// }
-
-// func (se StatusError) Status() int {
-// 	return se.Code
-// }
-
-// APIError defines error data format
-type APIError struct {
-	HTTPStatus int    `json:"http_status"`
-	ThirdParty bool   `json:"-"`
-	ID         string `json:"id"`
-	EN         string `json:"en"`
+var ErrUnknown *ErrorResponse = &ErrorResponse{
+	APICode:    "000001",
+	HTTPStatus: http.StatusInternalServerError,
+	Errors: ErrorData{
+		Details: DetailData{
+			ID: "Ups ada kesalahan, silahkan coba beberapa saat lagi",
+			EN: "Unknown error",
+		},
+	},
 }
 
-func (e APIError) Error() string {
-	b, _ := json.Marshal(e)
-	return string(b)
+var ErrUnauthorized *ErrorResponse = &ErrorResponse{
+	APICode:    "000001",
+	HTTPStatus: http.StatusUnauthorized,
+	Errors: ErrorData{
+		Details: DetailData{
+			ID: "Anda tidak diijinkan",
+			EN: "You are not authorized",
+		},
+	},
 }

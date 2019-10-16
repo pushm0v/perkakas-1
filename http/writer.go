@@ -10,9 +10,8 @@ import (
 )
 
 type HttpHandlerContext struct {
-	M           structs.Meta
-	SuccessCode int
-	E           map[error]structs.ErrorResponse
+	M structs.Meta
+	E map[error]*structs.ErrorResponse
 }
 
 type CustomWriter struct {
@@ -37,18 +36,19 @@ func (c *CustomWriter) Write(w http.ResponseWriter, data interface{}, nextPage *
 		}
 	}
 
-	successResp.APICode = c.C.SuccessCode
+	successResp.APICode = "000000"
 	successResp.Next = nextPage
 
 	apiResponse := &structs.Response{
-		HTTPCode: http.StatusOK,
-		Resp:     successResp,
-		Meta:     c.C.M,
+		Resp: successResp,
+		Meta: c.C.M,
 	}
 
 	res, err := json.Marshal(apiResponse)
 	if err != nil {
-		// handle error
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Failed to unmarshal"))
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -57,31 +57,39 @@ func (c *CustomWriter) Write(w http.ResponseWriter, data interface{}, nextPage *
 }
 
 func (c *CustomWriter) WriteError(w http.ResponseWriter, err error) {
-	var apiError *structs.APIError
-	if errors.As(err, &apiError) {
+	if len(c.C.E) > 0 {
 		errorResponse := LookupError(c.C.E, err)
-		apiResponse := &structs.Response{
-			HTTPCode: apiError.HTTPStatus,
-			Resp:     errorResponse,
-			Meta:     c.C.M,
-		}
-
-		res, err := json.Marshal(apiResponse)
-		if err != nil {
-			// handle error
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(apiError.HTTPStatus)
-		w.Write(res)
+		c.writeResponse(w, errorResponse)
 	} else {
-		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte("Forbidden"))
+		var errorResponse *structs.ErrorResponse
+		if errors.As(err, &errorResponse) {
+			c.writeResponse(w, errorResponse)
+		} else {
+			c.writeResponse(w, structs.ErrUnknown)
+		}
 	}
 }
 
+func (c *CustomWriter) writeResponse(w http.ResponseWriter, errorResponse *structs.ErrorResponse) {
+	apiResponse := &structs.Response{
+		Resp: errorResponse,
+		Meta: c.C.M,
+	}
+
+	res, err := json.Marshal(apiResponse)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Failed to unmarshal"))
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(errorResponse.HTTPStatus)
+	w.Write(res)
+}
+
 // GetErrorMessage will get error message based on error type
-func LookupError(lookup map[error]structs.ErrorResponse, err error) (res structs.ErrorResponse) {
+func LookupError(lookup map[error]*structs.ErrorResponse, err error) (res *structs.ErrorResponse) {
 	if msg, ok := lookup[err]; ok {
 		res = msg
 		return

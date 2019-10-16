@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"sync"
 	"time"
 
 	uuid "github.com/satori/go.uuid"
@@ -19,8 +20,11 @@ type Level uint32
 
 const (
 	FieldLogID           = "log_id"
+	FieldHTTPStatus      = "http_status"
 	FieldEndpoint        = "endpoint"
 	FieldMethod          = "method"
+	FieldServiceName     = "service"
+	FieldUserID          = "user_id"
 	FieldRequestBody     = "request_body"
 	FieldRequestHeaders  = "request_headers"
 	FieldResponseBody    = "response_body"
@@ -68,7 +72,7 @@ func (level Level) MarshalText() ([]byte, error) {
 
 type Logger struct {
 	logger *log.Logger
-	fields log.Fields
+	fields sync.Map
 	id     string
 }
 
@@ -80,29 +84,32 @@ func (l *Logger) NewChildLogger() (logger *Logger) {
 func (l *Logger) SetRequest(req interface{}) {
 	switch v := req.(type) {
 	case *http.Request:
-		token := v.Context().Value("token").(*jwt.UserClaim)
-		l.fields["user_id"] = token.UserID
-		l.fields[FieldEndpoint] = v.URL.String()
-		l.fields[FieldMethod] = v.Method
-		l.fields[FieldRequestHeaders] = v.Header
+		token, ok := v.Context().Value("token").(*jwt.UserClaim)
+		if ok {
+			l.fields.Store(FieldUserID, token.UserID)
+		}
+
+		l.fields.Store(FieldEndpoint, v.URL.String())
+		l.fields.Store(FieldMethod, v.Method)
+		l.fields.Store(FieldRequestHeaders, v.Header)
 
 		switch v.Method {
 		case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
-			l.fields[FieldRequestBody] = httputil.ReadRequestBody(v)
+			l.fields.Store(FieldRequestBody, httputil.ReadRequestBody(v))
 		}
 	default:
-		l.fields[FieldRequestBody] = req
+		l.fields.Store(FieldRequestBody, req)
 	}
 }
 
 func (l *Logger) SetResponse(res interface{}, body []byte) {
 	switch v := res.(type) {
 	case http.ResponseWriter:
-		l.fields[FieldResponseHeaders] = v.Header()
-		l.fields[FieldResponseBody] = string(body)
+		l.fields.Store(FieldResponseHeaders, v.Header())
+		l.fields.Store(FieldResponseBody, string(body))
 	case *http.Response:
-		l.fields[FieldResponseHeaders] = v.Header
-		l.fields[FieldResponseBody] = string(body)
+		l.fields.Store(FieldResponseHeaders, v.Header)
+		l.fields.Store(FieldResponseBody, string(body))
 	}
 }
 
@@ -112,15 +119,26 @@ func (l *Logger) AddMessage(level Level, message interface{}) *Logger {
 }
 
 func (l *Logger) Print() {
-	messages := ensureStackType(l.fields["stack"])
-	if len(messages) == 0 || len(l.fields) == 0 {
+	stackVal, _ := l.fields.Load("stack")
+	messages := ensureStackType(stackVal)
+
+	tempLoggerFields := make(map[string]interface{})
+	fieldsLen := 0
+
+	l.fields.Range(func(key interface{}, value interface{}) bool {
+		tempLoggerFields[key.(string)] = value
+		l.fields.Delete(key)
+		fieldsLen++
+		return true
+	})
+
+	if len(messages) == 0 || fieldsLen == 0 {
 		return
 	}
 
-	entry := l.logger.WithFields(l.fields)
+	entry := l.logger.WithFields(tempLoggerFields)
 	entry.Tracef("%+v", messages[0].Message)
-	l.fields = make(map[string]interface{})
-	l.fields["stack"] = []message{}
+	l.fields.Store("stack", []message{})
 }
 
 func (l *Logger) setCaller(msg interface{}, level Level) {
@@ -147,8 +165,9 @@ func (l *Logger) setCaller(msg interface{}, level Level) {
 }
 
 func (l *Logger) addMessageStack(msg message) {
-	stack := ensureStackType(l.fields["stack"])
-	l.fields["stack"] = append(stack, msg)
+	stackVal, _ := l.fields.Load("stack")
+	stack := ensureStackType(stackVal)
+	l.fields.Store("stack", append(stack, msg))
 }
 
 func ensureStackType(stack interface{}) (val []message) {
@@ -169,7 +188,7 @@ func newLog(formatter log.Formatter, out io.Writer, level log.Level, reportCalle
 	return
 }
 
-func newLogger(logID string) (logger *Logger) {
+func newLogger(serviceName string) (logger *Logger) {
 	formatter := &log.JSONFormatter{
 		TimestampFormat: time.RFC3339,
 		// PrettyPrint:     true,
@@ -182,25 +201,20 @@ func newLogger(logID string) (logger *Logger) {
 
 	logger = new(Logger)
 	logger.logger = newLogger
-	logger.fields = make(map[string]interface{})
-	logger.fields["stack"] = []message{}
+	logger.fields.Range(func(key interface{}, value interface{}) bool {
+		logger.fields.Delete(key)
+		return true
+	})
+	logger.fields.Store("stack", []message{})
 
-	var id string
-
-	if logID == "" {
-		id = uuid.NewV1().String()
-		logger.fields[FieldLogID] = id
-	} else {
-		logger.fields[FieldLogID] = logID
-		id = logID
-	}
-
+	id := uuid.NewV1().String()
+	logger.fields.Store(FieldLogID, id)
+	logger.fields.Store(FieldServiceName, serviceName)
 	logger.id = id
-
 	return
 }
 
-func NewLogger() (logger *Logger) {
-	logger = newLogger("")
+func NewLogger(serviceName string) (logger *Logger) {
+	logger = newLogger(serviceName)
 	return
 }

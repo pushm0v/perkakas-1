@@ -24,7 +24,7 @@ type LogTestSuite struct {
 }
 
 func (suite *LogTestSuite) SetupTest() {
-	suite.Logger = NewLogger()
+	suite.Logger = NewLogger("test")
 	suite.logID = "3891967c-8589-42e0-a493-4fb6a0287992" // should be dynamic uuid. This static uuid was for testing purpose
 	suite.host = "https://programming-quotes-api.herokuapp.com"
 	suite.endpoint = "quotes"

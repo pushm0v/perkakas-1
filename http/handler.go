@@ -1,14 +1,10 @@
 package http
 
 import (
-	"errors"
 	"net/http"
-
-	"github.com/kitabisa/perkakas/v2/structs"
 )
 
 type HttpHandler struct {
-	// C HttpHandlerContext
 	H func(w http.ResponseWriter, r *http.Request) (interface{}, *string, error)
 	CustomWriter
 }
@@ -22,12 +18,7 @@ func NewHttpHandler(c HttpHandlerContext) func(handler func(w http.ResponseWrite
 func (h HttpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	data, pageToken, err := h.H(w, r)
 	if err != nil {
-		var apiError *structs.APIError
-		if errors.As(err, &apiError) {
-			h.WriteError(w, err)
-		} else {
-			http.Error(w, err.Error(), http.StatusForbidden)
-		}
+		h.WriteError(w, err)
 		return
 	}
 
