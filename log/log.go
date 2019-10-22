@@ -126,10 +126,18 @@ func (l *Logger) Print() {
 	fieldsLen := 0
 
 	l.fields.Range(func(key interface{}, value interface{}) bool {
-		tempLoggerFields[key.(string)] = value
-		l.fields.Delete(key)
-		fieldsLen++
-		return true
+		k, ok := key.(string)
+		if ok {
+			if k != FieldLogID {
+				tempLoggerFields[k] = value
+				l.fields.Delete(key)
+				fieldsLen++
+			}
+
+			return true
+		}
+
+		return false
 	})
 
 	if len(messages) == 0 || fieldsLen == 0 {
