@@ -29,6 +29,9 @@ var pools []redsync.Pool
 var reds *redsync.Redsync
 
 func New(pool *redis.Pool, option ...Option) (distLock *DistLock) {
+	pools = []redsync.Pool{pool}
+	reds = redsync.New(pools)
+
 	o := makeOption(option)
 	return &DistLock{
 		Pool:   pool,
@@ -56,9 +59,6 @@ func makeOption(option []Option) (o Option) {
 }
 
 func (d *DistLock) SetCacheWithDistLock(key string, ttl interface{}, value interface{}) (err error) {
-
-	pools = []redsync.Pool{d.Pool}
-	reds = redsync.New(pools)
 
 	lockKey := fmt.Sprintf("lock-key-%s", key)
 
