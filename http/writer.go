@@ -36,56 +36,50 @@ func (c *CustomWriter) Write(w http.ResponseWriter, data interface{}, nextPage *
 		}
 	}
 
-	successResp.APICode = "000000"
+	successResp.ResponseCode = "000000"
 	successResp.Next = nextPage
+	successResp.Meta = c.C.M
 
-	apiResponse := &structs.Response{
-		Resp: successResp,
-		Meta: c.C.M,
-	}
-
-	res, err := json.Marshal(apiResponse)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Failed to unmarshal"))
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	w.Write(res)
+	writeSuccessResponse(w, successResp)
 }
 
 func (c *CustomWriter) WriteError(w http.ResponseWriter, err error) {
 	if len(c.C.E) > 0 {
 		errorResponse := LookupError(c.C.E, err)
-		c.writeResponse(w, errorResponse)
+		if errorResponse == nil {
+			errorResponse = structs.ErrUnknown
+		}
+
+		writeErrorResponse(w, errorResponse)
 	} else {
 		var errorResponse *structs.ErrorResponse
 		if errors.As(err, &errorResponse) {
-			c.writeResponse(w, errorResponse)
+			writeErrorResponse(w, errorResponse)
 		} else {
-			c.writeResponse(w, structs.ErrUnknown)
+			writeErrorResponse(w, structs.ErrUnknown)
 		}
 	}
 }
 
-func (c *CustomWriter) writeResponse(w http.ResponseWriter, errorResponse *structs.ErrorResponse) {
-	apiResponse := &structs.Response{
-		Resp: errorResponse,
-		Meta: c.C.M,
-	}
-
-	res, err := json.Marshal(apiResponse)
+func writeResponse(w http.ResponseWriter, response interface{}, contentType string, httpStatus int) {
+	res, err := json.Marshal(response)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("Failed to unmarshal"))
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(errorResponse.HTTPStatus)
+	w.Header().Set("Content-Type", contentType)
+	w.WriteHeader(httpStatus)
 	w.Write(res)
+}
+
+func writeSuccessResponse(w http.ResponseWriter, response structs.SuccessResponse) {
+	writeResponse(w, response, "application/json", http.StatusOK)
+}
+
+func writeErrorResponse(w http.ResponseWriter, errorResponse *structs.ErrorResponse) {
+	writeResponse(w, errorResponse, "application/json", errorResponse.HttpStatus)
 }
 
 // GetErrorMessage will get error message based on error type

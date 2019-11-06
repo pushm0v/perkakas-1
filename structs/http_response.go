@@ -8,34 +8,34 @@ type Meta struct {
 }
 
 type Response struct {
-	Resp interface{} `json:"response"`
-	Meta Meta        `json:"meta"`
+	ResponseCode string       `json:"response_code"`
+	ResponseDesc ResponseDesc `json:"response_desc"`
+	Meta         Meta         `json:"meta"`
 }
 
 type SuccessResponse struct {
-	APICode string      `json:"api_code"`
-	Next    *string     `json:"next,omitempty"`
-	Data    interface{} `json:"data"`
+	Response
+	Next *string     `json:"next,omitempty"`
+	Data interface{} `json:"data,omitempty"`
 }
 
 // error Response
 type ErrorResponse struct {
-	APICode    string    `json:"api_code"`
-	HTTPStatus int       `json:"-"`
-	Errors     ErrorData `json:"errors,omitempty"`
+	Response
+	HttpStatus int `json:"-"`
 }
 
 func (e *ErrorResponse) Error() string {
-	return e.Errors.Details.EN
+	return e.ResponseDesc.EN
 }
 
 // ErrorData defines error data response
 type ErrorData struct {
-	Details DetailData `json:"details"`
+	Details ResponseDesc `json:"details"`
 }
 
-// DetailData defines details data response
-type DetailData struct {
+// ResponseDesc defines details data response
+type ResponseDesc struct {
 	ID string `json:"id"`
 	EN string `json:"en"`
 }
