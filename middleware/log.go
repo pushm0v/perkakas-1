@@ -10,14 +10,12 @@ type HttpRequestLoggerMiddleware struct {
 	logger *log.Logger
 }
 
-func NewHttpRequestLoggerMiddleware(logger *log.Logger) *HttpRequestLoggerMiddleware {
-	return &HttpRequestLoggerMiddleware{
-		logger: logger,
+func NewHttpRequestLoggerMiddleware(logger *log.Logger) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			logger.SetRequest(r)
+			next.ServeHTTP(w, r)
+			logger.Print()
+		})
 	}
-}
-
-func (l *HttpRequestLoggerMiddleware) ServeHTTP(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
-	l.logger.SetRequest(r)
-	next(w, r)
-	l.logger.Print()
 }

@@ -5,23 +5,23 @@ import (
 )
 
 var ErrUnknown *ErrorResponse = &ErrorResponse{
-	APICode:    "000001",
-	HTTPStatus: http.StatusInternalServerError,
-	Errors: ErrorData{
-		Details: DetailData{
+	Response: Response{
+		ResponseCode: "00001",
+		ResponseDesc: ResponseDesc{
 			ID: "Ups ada kesalahan, silahkan coba beberapa saat lagi",
 			EN: "Unknown error",
 		},
 	},
+	HttpStatus: http.StatusInternalServerError,
 }
 
 var ErrUnauthorized *ErrorResponse = &ErrorResponse{
-	APICode:    "000001",
-	HTTPStatus: http.StatusUnauthorized,
-	Errors: ErrorData{
-		Details: DetailData{
+	Response: Response{
+		ResponseCode: "00001",
+		ResponseDesc: ResponseDesc{
 			ID: "Anda tidak diijinkan",
 			EN: "You are not authorized",
 		},
 	},
+	HttpStatus: http.StatusUnauthorized,
 }
