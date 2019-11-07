@@ -19,7 +19,7 @@ func TestCreate(t *testing.T) {
 	claims.ClientID = "apdifuoqpweyr9823u"
 	claims.Id = "63410cd1-110b-4a2c-8c3f-ae1535eda9a1"
 	claims.IssuedAt = time.Now().Unix()
-	claims.ExpiresAt = time.Now().Add(24 * time.Hour).Unix()
+	claims.ExpiresAt = time.Now().Add(48 * time.Hour).Unix()
 
 	jwt := NewJWT(signKey)
 	token, err := jwt.Create(claims)

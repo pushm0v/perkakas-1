@@ -30,9 +30,9 @@ func (e *ErrorResponse) Error() string {
 }
 
 // ErrorData defines error data response
-type ErrorData struct {
-	Details ResponseDesc `json:"details"`
-}
+// type ErrorData struct {
+// 	Details ResponseDesc `json:"details"`
+// }
 
 // ResponseDesc defines details data response
 type ResponseDesc struct {
