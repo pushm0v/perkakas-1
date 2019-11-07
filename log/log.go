@@ -120,9 +120,18 @@ func (l *Logger) AddMessage(level Level, message interface{}) *Logger {
 	return l
 }
 
-func (l *Logger) Print() {
+func (l *Logger) Print(directMsg ...interface{}) {
 	stackVal, _ := l.fields.Load("stack")
 	messages := ensureStackType(stackVal)
+
+	fmt.Println("Len direct message:", len(directMsg))
+	fmt.Println("Len message:", len(messages))
+	if len(directMsg) > 0 && len(messages) == 0 {
+		fmt.Println("mashoookkkkk")
+		log.Printf("%+v", directMsg)
+		return
+		// l.fields.Store("stack", []message{})
+	}
 
 	tempLoggerFields := make(map[string]interface{})
 	fieldsLen := 0
@@ -143,6 +152,7 @@ func (l *Logger) Print() {
 	})
 
 	if len(messages) == 0 || fieldsLen == 0 {
+		l.fields.Store("stack", []message{})
 		return
 	}
 

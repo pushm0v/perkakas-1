@@ -3,6 +3,7 @@ module github.com/kitabisa/perkakas/v2
 go 1.13
 
 require (
+	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-chi/chi v4.0.2+incompatible
 	github.com/go-redsync/redsync v1.3.1

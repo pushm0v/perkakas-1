@@ -14,6 +14,29 @@ type HttpHandlerContext struct {
 	E map[error]*structs.ErrorResponse
 }
 
+func NewContextHandler(meta structs.Meta) HttpHandlerContext {
+	var errMap map[error]*structs.ErrorResponse = map[error]*structs.ErrorResponse{
+		// register general error here, so if there are new general error you must add it here
+		structs.ErrInvalidHeader: structs.ErrInvalidHeader,
+		structs.ErrUnauthorized:  structs.ErrUnauthorized,
+	}
+
+	return HttpHandlerContext{
+		M: meta,
+		E: errMap,
+	}
+}
+
+func (hctx HttpHandlerContext) AddError(key error, value *structs.ErrorResponse) {
+	hctx.E[key] = value
+}
+
+func (hctx HttpHandlerContext) AddErrorMap(errMap map[error]*structs.ErrorResponse) {
+	for k, v := range errMap {
+		hctx.E[k] = v
+	}
+}
+
 type CustomWriter struct {
 	C HttpHandlerContext
 }

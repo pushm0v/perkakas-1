@@ -38,6 +38,11 @@ func (suite *LogTestSuite) SetupTest() {
 
 func (suite *LogTestSuite) TestEmptyLog() {
 	suite.Logger.Print()
+	suite.Logger.AddMessage(ErrorLevel, "adsfads")
+	suite.Logger.Print()
+	suite.Logger.Print("assssssss")
+	suite.Logger.AddMessage(ErrorLevel, "123123123")
+	suite.Logger.Print()
 }
 
 func (suite *LogTestSuite) TestLog() {
