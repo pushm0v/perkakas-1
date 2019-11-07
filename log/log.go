@@ -89,9 +89,11 @@ func (l *Logger) SetRequest(req interface{}) {
 			l.fields.Store(FieldUserID, token.UserID)
 		}
 
+		header := httputil.ExcludeSensitiveHeader(v.Header)
+
 		l.fields.Store(FieldEndpoint, v.URL.String())
 		l.fields.Store(FieldMethod, v.Method)
-		l.fields.Store(FieldRequestHeaders, v.Header)
+		l.fields.Store(FieldRequestHeaders, header)
 
 		switch v.Method {
 		case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
