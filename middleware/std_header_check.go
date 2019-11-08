@@ -1,10 +1,12 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/asaskevich/govalidator"
 	phttp "github.com/kitabisa/perkakas/v2/http"
+	"github.com/kitabisa/perkakas/v2/signature"
 	"github.com/kitabisa/perkakas/v2/structs"
 )
 
@@ -21,7 +23,7 @@ type Header struct {
 	Authorization  string `valid:"optional"`
 }
 
-func NewHeaderCheck(hctx phttp.HttpHandlerContext) func(next http.Handler) http.Handler {
+func NewHeaderCheck(hctx phttp.HttpHandlerContext, secretKey string) func(next http.Handler) http.Handler {
 	writer := phttp.CustomWriter{
 		C: hctx,
 	}
@@ -42,6 +44,13 @@ func NewHeaderCheck(hctx phttp.HttpHandlerContext) func(next http.Handler) http.
 			_, err := govalidator.ValidateStruct(header)
 			if err != nil {
 				writer.WriteError(w, structs.ErrInvalidHeader)
+				return
+			}
+
+			data := fmt.Sprintf("%s%s", header.XKtbsClientName, header.XKtbsTime)
+			match := signature.IsMatchHmac(data, header.XKtbsSignature, secretKey)
+			if !match {
+				writer.WriteError(w, structs.ErrInvalidHeaderSignature)
 				return
 			}
 

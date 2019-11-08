@@ -36,3 +36,14 @@ var ErrInvalidHeader *ErrorResponse = &ErrorResponse{
 	},
 	HttpStatus: http.StatusBadRequest,
 }
+
+var ErrInvalidHeaderSignature *ErrorResponse = &ErrorResponse{
+	Response: Response{
+		ResponseCode: "00004",
+		ResponseDesc: ResponseDesc{
+			ID: "Header signature tidak valid",
+			EN: "Invalid header signature",
+		},
+	},
+	HttpStatus: http.StatusBadRequest,
+}

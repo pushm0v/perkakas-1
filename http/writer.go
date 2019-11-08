@@ -17,8 +17,9 @@ type HttpHandlerContext struct {
 func NewContextHandler(meta structs.Meta) HttpHandlerContext {
 	var errMap map[error]*structs.ErrorResponse = map[error]*structs.ErrorResponse{
 		// register general error here, so if there are new general error you must add it here
-		structs.ErrInvalidHeader: structs.ErrInvalidHeader,
-		structs.ErrUnauthorized:  structs.ErrUnauthorized,
+		structs.ErrInvalidHeader:          structs.ErrInvalidHeader,
+		structs.ErrUnauthorized:           structs.ErrUnauthorized,
+		structs.ErrInvalidHeaderSignature: structs.ErrInvalidHeaderSignature,
 	}
 
 	return HttpHandlerContext{
