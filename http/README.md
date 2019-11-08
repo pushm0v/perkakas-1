@@ -38,17 +38,64 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) (data interface{}, pag
 }
 
 func main() {
-    // M is meta
-    // E is errorMap. Clients should supply the error map, so when error occured, the response writer
-    // will render the correct error message, or it will render an unknown error.
-	handlerCtx := phttp.HttpHandlerContext{
-		M: structs.Meta{
-			Version: "v1.2.3",
-			Status:  "stable",
-			APIEnv:  "prod-test",
-		},
-		E: errMap,
+    // Meta is metadata for the response
+	meta := structs.Meta{
+		Version: "v1.2.3",
+		Status:  "stable",
+		APIEnv:  "prod-test",
 	}
+
+	// When new context handler is created, it will inject all general error map.
+	// Then you should add your necessary own error to the handler.
+	handlerCtx := phttp.NewContextHandler(meta)
+
+	// add error individualy
+	var ErrCustom *structs.ErrorResponse = &structs.ErrorResponse{
+		Response: structs.Response{
+			ResponseCode: "00011",
+			ResponseDesc: structs.ResponseDesc{
+				ID: "Custom error",
+				EN: "Custom error",
+			},
+		},
+		HttpStatus: http.StatusInternalServerError,
+	}
+	handlerCtx.AddError(errors.New("custom error"), ErrCustom)
+
+	// add error individualy
+	var ErrCustom2 *structs.ErrorResponse = &structs.ErrorResponse{
+		Response: structs.Response{
+			ResponseCode: "00011",
+			ResponseDesc: structs.ResponseDesc{
+				ID: "Custom error",
+				EN: "Custom error",
+			},
+		},
+		HttpStatus: http.StatusInternalServerError,
+	}
+
+	// add error individualy
+	var ErrCustom3 *structs.ErrorResponse = &structs.ErrorResponse{
+		Response: structs.Response{
+			ResponseCode: "00011",
+			ResponseDesc: structs.ResponseDesc{
+				ID: "Custom error",
+				EN: "Custom error",
+			},
+		},
+		HttpStatus: http.StatusInternalServerError,
+	}
+
+	// add error by setup error map at first
+	customError2 := errors.New("Custom error 2")
+	customError3 := errors.New("Custom error 3")
+	errMap := map[error]*structs.ErrorResponse{
+		customError2: ErrCustom2,
+		customError3: ErrCustom3,
+	}
+
+	// add error map
+	handlerCtx.AddErrorMap(errMap)
 
     // newHandler is a function that will create function for create new custom handler with injected handler context
     newHandler := phttp.NewHttpHandler(handlerCtx)

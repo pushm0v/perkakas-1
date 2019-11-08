@@ -11,7 +11,7 @@ import (
 	"github.com/kitabisa/perkakas/v2/token/jwt"
 )
 
-func NewJWTMiddleware(hctx phttp.HttpHandlerContext, signKey []byte) func(next http.Handler) http.Handler {
+func NewJWT(hctx phttp.HttpHandlerContext, signKey []byte) func(next http.Handler) http.Handler {
 	jwtt := jwt.NewJWT(signKey)
 	writer := phttp.CustomWriter{
 		C: hctx,

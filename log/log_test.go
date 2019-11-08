@@ -40,6 +40,16 @@ func (suite *LogTestSuite) TestEmptyLog() {
 	suite.Logger.Print()
 }
 
+func (suite *LogTestSuite) TestMultipleCallLog() {
+	suite.Logger.Print()
+	suite.Logger.Print("message1", "message2")
+	suite.Logger.AddMessage(ErrorLevel, "This is error")
+	suite.Logger.AddMessage(ErrorLevel)
+	suite.Logger.Print()
+	suite.Logger.AddMessage(InfoLevel, "This is info")
+	suite.Logger.Print("message3", "message4")
+}
+
 func (suite *LogTestSuite) TestLog() {
 	defer gock.Off()
 

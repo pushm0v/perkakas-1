@@ -18,3 +18,14 @@ func ReadRequestBody(req *http.Request) (bodyString string) {
 	bodyString = string(bodyBytes)
 	return
 }
+
+// ExcludeSensitiveHeader exclude sensitive header. Currently, sensitive header only Authorization
+func ExcludeSensitiveHeader(header http.Header) (h http.Header) {
+	h = make(http.Header)
+	for k, v := range header {
+		h[k] = v
+	}
+
+	h.Del("Authorization")
+	return
+}

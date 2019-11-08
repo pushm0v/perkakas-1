@@ -13,15 +13,14 @@ Log middleware is middleware that will help logging the application. The logging
 ## How To Use The Middleware
 ```go
 func main() {
-	handlerCtx := phttp.HttpHandlerContext{
-		M: structs.Meta{
-			Version: "v1.2.3",
-			Status:  "stable",
-			APIEnv:  "prod-test",
-		},
-		E: errMap,
+	meta := structs.Meta{
+		Version: "v1.2.3",
+		Status:  "stable",
+		APIEnv:  "prod-test",
 	}
 
+	handlerCtx := phttp.NewContextHandler(meta)
+	
 	newHandler := phttp.NewHttpHandler(handlerCtx)
 	helloHandler := newHandler(HelloHandler)
 

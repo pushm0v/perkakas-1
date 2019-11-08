@@ -89,9 +89,11 @@ func (l *Logger) SetRequest(req interface{}) {
 			l.fields.Store(FieldUserID, token.UserID)
 		}
 
+		header := httputil.ExcludeSensitiveHeader(v.Header)
+
 		l.fields.Store(FieldEndpoint, v.URL.String())
 		l.fields.Store(FieldMethod, v.Method)
-		l.fields.Store(FieldRequestHeaders, v.Header)
+		l.fields.Store(FieldRequestHeaders, header)
 
 		switch v.Method {
 		case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
@@ -113,25 +115,33 @@ func (l *Logger) SetResponse(res interface{}, body []byte) {
 	}
 }
 
-func (l *Logger) AddMessage(level Level, message interface{}) *Logger {
-	l.setCaller(message, level)
+func (l *Logger) AddMessage(level Level, message ...interface{}) *Logger {
+	l.setCaller(level, message...)
 	return l
 }
 
-func (l *Logger) Print() {
+func (l *Logger) Print(directMsg ...interface{}) {
+	if len(directMsg) > 0 {
+		l.AddMessage(DebugLevel, directMsg...)
+	}
+
 	stackVal, _ := l.fields.Load("stack")
 	messages := ensureStackType(stackVal)
 
-	tempLoggerFields := make(map[string]interface{})
-	fieldsLen := 0
+	if len(messages) > 0 {
+		entry := l.logger.WithFields(l.syncMapToLogFields())
+		entry.Tracef("%+v", messages[0].Message)
+	}
 
+	l.clear()
+}
+
+func (l *Logger) clear() {
 	l.fields.Range(func(key interface{}, value interface{}) bool {
 		k, ok := key.(string)
 		if ok {
 			if k != FieldLogID {
-				tempLoggerFields[k] = value
 				l.fields.Delete(key)
-				fieldsLen++
 			}
 
 			return true
@@ -140,42 +150,65 @@ func (l *Logger) Print() {
 		return false
 	})
 
-	if len(messages) == 0 || fieldsLen == 0 {
-		return
-	}
-
-	entry := l.logger.WithFields(tempLoggerFields)
-	entry.Tracef("%+v", messages[0].Message)
 	l.fields.Store("stack", []message{})
 }
 
-func (l *Logger) setCaller(msg interface{}, level Level) {
-	if msg != nil && msg != "" {
+func (l *Logger) syncMapToLogFields() (fields log.Fields) {
+	fields = make(log.Fields)
+
+	l.fields.Range(func(key interface{}, value interface{}) bool {
+		k, ok := key.(string)
+		if ok {
+			fields[k] = value
+			return true
+		}
+
+		return false
+	})
+
+	return
+}
+
+func (l *Logger) setCaller(level Level, msgs ...interface{}) {
+	if msgs == nil || len(msgs) == 0 {
+		return
+	}
+
+	for _, val := range msgs {
+		if val == "" {
+			continue
+		}
+
 		if pc, file, line, ok := runtime.Caller(2); ok {
 			fName := runtime.FuncForPC(pc).Name()
 
-			err, ok := msg.(error)
+			err, ok := val.(error)
 			if ok && err != nil {
-				msg = err.Error()
+				val = err.Error()
 			}
 
-			msg := message{
-				Message:  msg,
+			vmsg := message{
+				Message:  val,
 				Level:    level,
 				File:     file,
 				FuncName: fName,
 				Line:     line,
 			}
 
-			l.addMessageStack(msg)
+			l.addMessageStack(vmsg)
 		}
 	}
 }
 
-func (l *Logger) addMessageStack(msg message) {
+func (l *Logger) addMessageStack(msg ...message) {
 	stackVal, _ := l.fields.Load("stack")
 	stack := ensureStackType(stackVal)
-	l.fields.Store("stack", append(stack, msg))
+
+	for _, val := range msg {
+		stack = append(stack, val)
+	}
+
+	l.fields.Store("stack", stack)
 }
 
 func ensureStackType(stack interface{}) (val []message) {
