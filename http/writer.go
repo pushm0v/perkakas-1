@@ -74,13 +74,17 @@ func (c *CustomWriter) WriteError(w http.ResponseWriter, err error) {
 			errorResponse = structs.ErrUnknown
 		}
 
+		errorResponse.Meta = c.C.M
 		writeErrorResponse(w, errorResponse)
 	} else {
-		var errorResponse *structs.ErrorResponse
+		var errorResponse *structs.ErrorResponse = &structs.ErrorResponse{}
 		if errors.As(err, &errorResponse) {
+			errorResponse.Meta = c.C.M
 			writeErrorResponse(w, errorResponse)
 		} else {
-			writeErrorResponse(w, structs.ErrUnknown)
+			errorResponse = structs.ErrUnknown
+			errorResponse.Meta = c.C.M
+			writeErrorResponse(w, errorResponse)
 		}
 	}
 }
