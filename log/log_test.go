@@ -38,11 +38,16 @@ func (suite *LogTestSuite) SetupTest() {
 
 func (suite *LogTestSuite) TestEmptyLog() {
 	suite.Logger.Print()
-	suite.Logger.AddMessage(ErrorLevel, "adsfads")
+}
+
+func (suite *LogTestSuite) TestMultipleCallLog() {
 	suite.Logger.Print()
-	suite.Logger.Print("assssssss")
-	suite.Logger.AddMessage(ErrorLevel, "123123123")
+	suite.Logger.Print("message1", "message2")
+	suite.Logger.AddMessage(ErrorLevel, "This is error")
+	suite.Logger.AddMessage(ErrorLevel)
 	suite.Logger.Print()
+	suite.Logger.AddMessage(InfoLevel, "This is info")
+	suite.Logger.Print("message3", "message4")
 }
 
 func (suite *LogTestSuite) TestLog() {
