@@ -249,10 +249,8 @@ func newLogger(serviceName string, logID string) (logger *Logger) {
 	})
 	logger.fields.Store("stack", []message{})
 
-	var id string
-	if logID == "" {
-		id = uuid.NewV1().String()
-	} else {
+	id := uuid.NewV1().String()
+	if logID != "" {
 		id = logID
 	}
 
