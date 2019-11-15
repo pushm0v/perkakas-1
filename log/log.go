@@ -71,13 +71,14 @@ func (level Level) MarshalText() ([]byte, error) {
 }
 
 type Logger struct {
-	logger *log.Logger
-	fields sync.Map
-	id     string
+	logger  *log.Logger
+	fields  sync.Map
+	id      string
+	service string
 }
 
 func (l *Logger) NewChildLogger() (logger *Logger) {
-	logger = newLogger(l.id)
+	logger = newLogger(l.service, l.id)
 	return
 }
 
@@ -229,7 +230,7 @@ func newLog(formatter log.Formatter, out io.Writer, level log.Level, reportCalle
 	return
 }
 
-func newLogger(serviceName string) (logger *Logger) {
+func newLogger(serviceName string, logID string) (logger *Logger) {
 	formatter := &log.JSONFormatter{
 		TimestampFormat: time.RFC3339,
 		// PrettyPrint:     true,
@@ -248,14 +249,21 @@ func newLogger(serviceName string) (logger *Logger) {
 	})
 	logger.fields.Store("stack", []message{})
 
-	id := uuid.NewV1().String()
+	var id string
+	if logID == "" {
+		id = uuid.NewV1().String()
+	} else {
+		id = logID
+	}
+
 	logger.fields.Store(FieldLogID, id)
 	logger.fields.Store(FieldServiceName, serviceName)
 	logger.id = id
+	logger.service = serviceName
 	return
 }
 
 func NewLogger(serviceName string) (logger *Logger) {
-	logger = newLogger(serviceName)
+	logger = newLogger(serviceName, "")
 	return
 }
