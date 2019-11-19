@@ -29,8 +29,8 @@ type Client struct {
 }
 
 type BatchPointsWriter struct {
-	client.BatchPoints
-	client client.Client
+	batchPoints client.BatchPoints
+	client      client.Client
 }
 
 type Tags map[string]string
@@ -109,7 +109,7 @@ func (c *Client) NewBatchPointsWriter(precision string) (bpw BatchPointsWriter, 
 		return
 	}
 
-	bpw.BatchPoints = bp
+	bpw.batchPoints = bp
 	bpw.client = c.client
 
 	return
@@ -121,11 +121,11 @@ func (b BatchPointsWriter) AddPoints(name string, tags Tags, fields Fields) {
 		return
 	}
 
-	b.AddPoint(pt)
+	b.batchPoints.AddPoint(pt)
 }
 
 func (b BatchPointsWriter) Write() (err error){
-	err = b.client.Write(b.BatchPoints)
+	err = b.client.Write(b.batchPoints)
 	if err != nil {
 		return
 	}
