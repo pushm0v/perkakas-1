@@ -73,3 +73,6 @@ b.AddPoints("products", tags, fields) // you can add more points later
 
 b.Write() // finally write the points
 ```
+
+## Important Notes
+Please close the client when your application exits
