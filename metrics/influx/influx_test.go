@@ -15,11 +15,10 @@ func emptyTestServer() *httptest.Server {
 }
 
 func TestWritePoint(t *testing.T) {
-	//mockServer := emptyTestServer()
+	mockServer := emptyTestServer()
 
 	config := ClientConfig{
-		//Addr:               mockServer.URL,
-		Addr:               "http://localhost:32826",
+		Addr:               mockServer.URL,
 		Database:           "myDB",
 		Timeout:            5 * time.Second,
 	}
