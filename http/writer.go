@@ -3,6 +3,7 @@ package http
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"reflect"
 
@@ -67,9 +68,10 @@ func (c *CustomWriter) Write(w http.ResponseWriter, data interface{}, nextPage *
 	writeSuccessResponse(w, successResp)
 }
 
-func (c *CustomWriter) WriteError(w http.ResponseWriter, err error) {
+// WriteError sending error response based on err type
+func (c *CustomWriter) WriteError(w http.ResponseWriter, err error, variables ...interface{}) {
 	if len(c.C.E) > 0 {
-		errorResponse := LookupError(c.C.E, err)
+		errorResponse := LookupError(c.C.E, err, variables)
 		if errorResponse == nil {
 			errorResponse = structs.ErrUnknown
 		}
@@ -110,10 +112,12 @@ func writeErrorResponse(w http.ResponseWriter, errorResponse *structs.ErrorRespo
 	writeResponse(w, errorResponse, "application/json", errorResponse.HttpStatus)
 }
 
-// GetErrorMessage will get error message based on error type
-func LookupError(lookup map[error]*structs.ErrorResponse, err error) (res *structs.ErrorResponse) {
+// LookupError will get error message based on error type
+func LookupError(lookup map[error]*structs.ErrorResponse, err error, variables ...interface{}) (res *structs.ErrorResponse) {
 	if msg, ok := lookup[err]; ok {
 		res = msg
+		res.ResponseDesc.ID = fmt.Sprintf(res.ResponseDesc.ID, variables)
+		res.ResponseDesc.EN = fmt.Sprintf(res.ResponseDesc.EN, variables)
 		return
 	}
 
