@@ -10,22 +10,23 @@ import (
 )
 
 type ClientConfig struct {
-	Addr string
-	Username string
-	Password string
-	Database string
-	RetentionPolicy string
-	UserAgent string
-	Timeout time.Duration
+	Addr               string
+	Username           string
+	Password           string
+	Database           string
+	RetentionPolicy    string
+	UserAgent          string
+	Timeout            time.Duration
 	InsecureSkipVerify bool
-	TLSConfig *tls.Config
-	Proxy func(req *http.Request) (*url.URL, error)
+	TLSConfig          *tls.Config
+	Proxy              func(req *http.Request) (*url.URL, error)
 }
 
 type Client struct {
-	client client.Client
-	dbName string
+	client          client.Client
+	dbName          string
 	retentionPolicy string
+	timeout         time.Duration
 }
 
 type BatchPointsWriter struct {
@@ -43,9 +44,10 @@ func NewClient(config ClientConfig) (c *Client, err error) {
 	}
 
 	c = &Client{
-		client: httpClient,
-		dbName: config.Database,
+		client:          httpClient,
+		dbName:          config.Database,
 		retentionPolicy: config.RetentionPolicy,
+		timeout:         config.Timeout,
 	}
 
 	return
@@ -53,8 +55,8 @@ func NewClient(config ClientConfig) (c *Client, err error) {
 
 func newHTTPClient(config ClientConfig) (c client.Client, err error) {
 	httpConfig := client.HTTPConfig{
-		Addr:              config.Addr,
-		Username:          config.Username,
+		Addr:               config.Addr,
+		Username:           config.Username,
 		Password:           config.Password,
 		UserAgent:          config.UserAgent,
 		Timeout:            config.Timeout,
@@ -71,11 +73,16 @@ func newHTTPClient(config ClientConfig) (c client.Client, err error) {
 	return
 }
 
+func (c *Client) Ping() (err error) {
+	_, _, err = c.client.Ping(c.timeout)
+	return
+}
+
 func (c *Client) WritePoints(name string, tags Tags, fields Fields, precision string) (err error) {
 	bp, err := client.NewBatchPoints(client.BatchPointsConfig{
 		Precision:        precision,
 		Database:         c.dbName,
-		RetentionPolicy: c.retentionPolicy,
+		RetentionPolicy:  c.retentionPolicy,
 		WriteConsistency: "one",
 	})
 
@@ -124,7 +131,7 @@ func (b BatchPointsWriter) AddPoints(name string, tags Tags, fields Fields) {
 	b.batchPoints.AddPoint(pt)
 }
 
-func (b BatchPointsWriter) Write() (err error){
+func (b BatchPointsWriter) Write() (err error) {
 	err = b.client.Write(b.batchPoints)
 	if err != nil {
 		return
@@ -132,4 +139,3 @@ func (b BatchPointsWriter) Write() (err error){
 
 	return
 }
-
