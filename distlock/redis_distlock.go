@@ -1,83 +1,30 @@
 package distlock
 
 import (
-	"fmt"
-	"time"
-
-	"github.com/go-redsync/redsync"
 	"github.com/gomodule/redigo/redis"
+	"github.com/im7mortal/kmutex"
 )
 
 type DistLock struct {
 	Pool   *redis.Pool
-	Option Option
+	Kmutex *kmutex.Kmutex
 }
 
-type Option struct {
-	RedisLockerTries      int
-	RedisLockerRetryDelay time.Duration
-	RedisLockerExpiry     time.Duration
-}
+func New(pool *redis.Pool) (distLock *DistLock) {
+	kMutex := kmutex.New()
 
-const (
-	RedisLockerTries      = 3
-	RedisLockerRetryDelay = 2 * time.Second
-	RedisLockerExpiry     = 5 * time.Second
-)
-
-var pools []redsync.Pool
-var reds *redsync.Redsync
-
-func New(pool *redis.Pool, option ...Option) (distLock *DistLock) {
-	pools = []redsync.Pool{pool}
-	reds = redsync.New(pools)
-
-	o := makeOption(option)
 	return &DistLock{
 		Pool:   pool,
-		Option: o,
+		Kmutex: kMutex,
 	}
-}
-
-func makeOption(option []Option) (o Option) {
-	o.RedisLockerTries = RedisLockerTries
-	o.RedisLockerRetryDelay = RedisLockerRetryDelay
-	o.RedisLockerExpiry = RedisLockerExpiry
-
-	for _, opt := range option {
-		if opt.RedisLockerTries != 0 {
-			o.RedisLockerTries = opt.RedisLockerTries
-		}
-		if opt.RedisLockerRetryDelay != 0 {
-			o.RedisLockerRetryDelay = opt.RedisLockerRetryDelay
-		}
-		if opt.RedisLockerExpiry != 0 {
-			o.RedisLockerExpiry = opt.RedisLockerExpiry
-		}
-	}
-	return o
 }
 
 func (d *DistLock) SetCacheWithDistLock(key string, ttl interface{}, value interface{}) (err error) {
 
-	lockKey := fmt.Sprintf("lock-key-%s", key)
-
-	mtx := reds.NewMutex(lockKey,
-		redsync.SetTries(d.Option.RedisLockerTries),
-		redsync.SetRetryDelay(d.Option.RedisLockerRetryDelay),
-		redsync.SetExpiry(d.Option.RedisLockerExpiry),
-	)
-
-	for {
-		errLock := mtx.Lock()
-		if errLock == nil {
-			break
-		}
-	}
-	defer mtx.Unlock()
+	d.Kmutex.Lock(key)
+	defer d.Kmutex.Unlock(key)
 
 	_, err = redis.Bytes(d.Pool.Get().Do("GET", key))
-
 	if err == redis.ErrNil {
 		_, err := d.Pool.Get().Do("SETEX", key, ttl, value)
 		if err != nil {
