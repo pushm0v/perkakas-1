@@ -1,8 +1,6 @@
 package distlock
 
 import (
-	"fmt"
-
 	"github.com/gomodule/redigo/redis"
 	"github.com/im7mortal/kmutex"
 )
@@ -23,10 +21,8 @@ func New(pool *redis.Pool) (distLock *DistLock) {
 
 func (d *DistLock) SetCacheWithDistLock(key string, ttl interface{}, value interface{}) (err error) {
 
-	lockKey := fmt.Sprintf("lock-key-%s", key)
-
-	d.Kmutex.Lock(lockKey)
-	defer d.Kmutex.Unlock(lockKey)
+	d.Kmutex.Lock(key)
+	defer d.Kmutex.Unlock(key)
 
 	_, err = redis.Bytes(d.Pool.Get().Do("GET", key))
 	if err == redis.ErrNil {
