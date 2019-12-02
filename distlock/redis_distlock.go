@@ -3,26 +3,21 @@ package distlock
 import (
 	"fmt"
 
-	"github.com/go-redsync/redsync"
 	"github.com/gomodule/redigo/redis"
 	"github.com/im7mortal/kmutex"
 )
 
 type DistLock struct {
-	Pool *redis.Pool
+	Pool   *redis.Pool
+	Kmutex *kmutex.Kmutex
 }
 
-var pools []redsync.Pool
-var reds *redsync.Redsync
-var kMutex *kmutex.Kmutex
-
 func New(pool *redis.Pool) (distLock *DistLock) {
-	pools = []redsync.Pool{pool}
-	reds = redsync.New(pools)
-	kMutex = kmutex.New()
+	kMutex := kmutex.New()
 
 	return &DistLock{
-		Pool: pool,
+		Pool:   pool,
+		Kmutex: kMutex,
 	}
 }
 
@@ -30,11 +25,10 @@ func (d *DistLock) SetCacheWithDistLock(key string, ttl interface{}, value inter
 
 	lockKey := fmt.Sprintf("lock-key-%s", key)
 
-	kMutex.Lock(lockKey)
-	defer kMutex.Unlock(lockKey)
+	d.Kmutex.Lock(lockKey)
+	defer d.Kmutex.Unlock(lockKey)
 
 	_, err = redis.Bytes(d.Pool.Get().Do("GET", key))
-
 	if err == redis.ErrNil {
 		_, err := d.Pool.Get().Do("SETEX", key, ttl, value)
 		if err != nil {
