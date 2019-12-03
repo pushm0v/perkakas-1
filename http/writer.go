@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"reflect"
+	"strings"
 
 	"github.com/kitabisa/perkakas/v2/structs"
 )
@@ -69,7 +70,7 @@ func (c *CustomWriter) Write(w http.ResponseWriter, data interface{}, nextPage *
 }
 
 // WriteError sending error response based on err type
-func (c *CustomWriter) WriteError(w http.ResponseWriter, err error, variables ...interface{}) {
+func (c *CustomWriter) WriteError(w http.ResponseWriter, err error, variables []interface{}) {
 	if len(c.C.E) > 0 {
 		errorResponse := LookupError(c.C.E, err, variables)
 		if errorResponse == nil {
@@ -112,12 +113,16 @@ func writeErrorResponse(w http.ResponseWriter, errorResponse *structs.ErrorRespo
 	writeResponse(w, errorResponse, "application/json", errorResponse.HttpStatus)
 }
 
-// LookupError will get error message based on error type
-func LookupError(lookup map[error]*structs.ErrorResponse, err error, variables ...interface{}) (res *structs.ErrorResponse) {
+// LookupError will get error message based on error type, with variables if you want give dynamic message error
+func LookupError(lookup map[error]*structs.ErrorResponse, err error, variables []interface{}) (res *structs.ErrorResponse) {
 	if msg, ok := lookup[err]; ok {
 		res = msg
-		res.ResponseDesc.ID = fmt.Sprintf(res.ResponseDesc.ID, variables)
-		res.ResponseDesc.EN = fmt.Sprintf(res.ResponseDesc.EN, variables)
+		if strings.Contains(res.ResponseDesc.ID, "%") {
+			res.ResponseDesc.ID = fmt.Sprintf(res.ResponseDesc.ID, variables...)
+		}
+		if strings.Contains(res.ResponseDesc.EN, "%") {
+			res.ResponseDesc.EN = fmt.Sprintf(res.ResponseDesc.EN, variables...)
+		}
 		return
 	}
 
