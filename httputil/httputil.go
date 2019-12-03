@@ -40,5 +40,5 @@ func ExcludeSensitiveHeader(header http.Header) (h http.Header) {
 
 func ExcludeSensitiveRequestBody(body *string) {
 	result := passRemover.ReplaceAllString(*body, "")
-	body = &result
+	*body = result
 }
