@@ -98,7 +98,10 @@ func (l *Logger) SetRequest(req interface{}) {
 
 		switch v.Method {
 		case http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete:
-			l.fields.Store(FieldRequestBody, httputil.ReadRequestBody(v))
+			body := httputil.ReadRequestBody(v)
+			httputil.ExcludeSensitiveRequestBody(&body)
+
+			l.fields.Store(FieldRequestBody, body)
 		}
 	default:
 		l.fields.Store(FieldRequestBody, req)

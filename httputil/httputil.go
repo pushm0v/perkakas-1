@@ -4,7 +4,15 @@ import (
 	"bytes"
 	"io/ioutil"
 	"net/http"
+	"regexp"
 )
+
+const passwordPattern = `(\\{0,1}"password\\{0,1}"):\s*\\{0,1}"(.*?)\\{0,1}"`
+var passRemover *regexp.Regexp
+
+func init() {
+	passRemover = regexp.MustCompile(passwordPattern)
+}
 
 func ReadRequestBody(req *http.Request) (bodyString string) {
 	var bodyBytes []byte
@@ -28,4 +36,9 @@ func ExcludeSensitiveHeader(header http.Header) (h http.Header) {
 
 	h.Del("Authorization")
 	return
+}
+
+func ExcludeSensitiveRequestBody(body *string) {
+	result := passRemover.ReplaceAllString(*body, "")
+	*body = result
 }
