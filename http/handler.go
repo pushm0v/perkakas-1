@@ -5,6 +5,7 @@ import (
 )
 
 type HttpHandler struct {
+	// H is handler, with return interface{} as data object, *string for token next page, error for error type
 	H func(w http.ResponseWriter, r *http.Request) (interface{}, *string, error)
 	CustomWriter
 }
