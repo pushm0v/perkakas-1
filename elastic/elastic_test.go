@@ -7,6 +7,7 @@ import (
 	es "github.com/olivere/elastic/v7"
 	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 )
 
 var client *MyClient
@@ -168,3 +169,15 @@ func TestBulkStore(t *testing.T) {
 	assert.Nil(t, err)
 }
 
+func TestAddBulkProcessor(t *testing.T) {
+	bulkProcessor := BulkProcessor{
+		Name:          "my-bulk-processor",
+		Workers:       10,
+		BulkActions:   100,
+		BulkSize:      2 << 20,
+		FlushInterval: 1 * time.Second,
+	}
+
+	err := client.AddBulkProcessor(bulkProcessor)
+	assert.Nil(t, err)
+}

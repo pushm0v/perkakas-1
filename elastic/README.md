@@ -164,4 +164,21 @@ if err != nil {
     // handle error here
 }
 ```
+As you can see when client.BulkStore() called, it require a bulk processor. You can ignore it by give an empty string
+argument, and it will use default bulk processor.
+You can also create your own bulk processor and add it to the client:
+```go
+bulkProcessor := BulkProcessor{
+    Name:          "my-bulk-processor", // name of the bulk processor
+    Workers:       10, // how many workers
+    BulkActions:   100, // flush when reach 100 bulk requests
+    BulkSize:      2 << 20, // flush when reach bulk request size 2 MB
+    FlushInterval: 1 * time.Second, // flush every 1 second
+}
+
+err := client.AddBulkProcessor(bulkProcessor)
+```
+
+Or if you have add bulk processor earlier, you can get the bulk processor with `client.GetBulkProcessor("name")`.
+It will returns the bulk processor and error if cannot find the specified bulk processor name.
 
