@@ -17,7 +17,7 @@ import (
 )
 
 type MyClient struct {
-    *elastic.Client
+    *elastic.ElasticClient
 }
 
 func NewMyClient(url string) *MyClient{
@@ -27,7 +27,7 @@ func NewMyClient(url string) *MyClient{
 	}
 
 	return &MyClient {
-		Client: c,
+		ElasticClient: c,
 	}
 }
 

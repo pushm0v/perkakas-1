@@ -2,7 +2,6 @@ package elastic
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	es "github.com/olivere/elastic/v7"
 	"github.com/stretchr/testify/assert"
@@ -13,7 +12,7 @@ import (
 var client *MyClient
 
 type MyClient struct {
-	*Client
+	ElasticClient
 }
 
 func NewMyClient(url string) *MyClient{
@@ -23,7 +22,7 @@ func NewMyClient(url string) *MyClient{
 	}
 
 	return &MyClient {
-		Client: c,
+		ElasticClient: c,
 	}
 }
 
@@ -138,12 +137,6 @@ func TestClient_DeleteIndex(t *testing.T) {
 	assert.Nil(t, err)
 }
 
-func TestCreateElasticIndex(t *testing.T) {
-	idx := elasticCreateIndex()
-	output, _ := json.Marshal(idx)
-	t.Log(string(output))
-}
-
 func TestBulkStore(t *testing.T) {
 	ctx := context.Background()
 	docs := []interface{}{
@@ -179,5 +172,11 @@ func TestAddBulkProcessor(t *testing.T) {
 	}
 
 	err := client.AddBulkProcessor(bulkProcessor)
+	assert.Nil(t, err)
+}
+
+func TestPing(t *testing.T) {
+	ctx := context.Background()
+	_, _, err := client.Ping(ctx, "http://localhost:9200")
 	assert.Nil(t, err)
 }

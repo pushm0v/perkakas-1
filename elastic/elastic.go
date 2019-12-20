@@ -13,7 +13,7 @@ func onError(err error) {
 	fmt.Println(err)
 }
 
-type ElasticClients interface {
+type ElasticClient interface {
 	ElasticBasicActions
 	ElasticBulkActions
 }
@@ -23,9 +23,11 @@ type ElasticBasicActions interface{
 	Store(ctx context.Context, name string, doc interface{}, template *DynamicTemplate) (res *es.IndexResponse, err error)
 	Remove(ctx context.Context, indexName string, id string) (res *es.DeleteResponse, err error)
 	RemoveIndex(ctx context.Context, indexName ...string) (res *es.IndicesDeleteResponse, err error)
+	Ping(ctx context.Context, nodeURL string) (*es.PingResult, int, error)
 }
 
 type ElasticBulkActions interface {
+	AddBulkProcessor(bulkProcessor BulkProcessor) (err error)
 	BulkStore(ctx context.Context, indexName string, processorName string, docs []interface{}, template *DynamicTemplate) (err error)
 }
 
@@ -53,7 +55,7 @@ type SearchOption struct {
 	Size int
 }
 
-func NewClient(urls ...string) (client *Client, err error) {
+func NewClient(urls ...string) (c ElasticClient, err error) {
 	esclient, err := es.NewClient(
 		es.SetURL(urls...),
 		es.SetSniff(false),
@@ -64,11 +66,12 @@ func NewClient(urls ...string) (client *Client, err error) {
 		return
 	}
 
-	client = &Client{
+	client := &Client{
 		esclient: esclient,
 	}
 
 	client.defaultBulkProcessor()
+	c = client
 
 	return
 }
@@ -153,6 +156,7 @@ func (c *Client) Store(ctx context.Context, name string, doc interface{}, templa
 // Delete delete document to elastic
 func (c *Client) Remove(ctx context.Context, indexName string, id string) (res *es.DeleteResponse, err error) {
 	res, err = c.esclient.Delete().
+		Index(indexName).
 		Id(id).
 		Do(ctx)
 	return
@@ -262,4 +266,9 @@ func (c *Client) GetBulkProcessor(name string) (processor *es.BulkProcessor, err
 
 	return
 }
+
+func (c *Client) Ping(ctx context.Context, nodeURL string) (*es.PingResult, int, error){
+	return c.esclient.Ping(nodeURL).Do(ctx)
+}
+
 
