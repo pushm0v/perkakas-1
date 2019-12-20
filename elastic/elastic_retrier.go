@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	es "github.com/olivere/elastic/v7"
-	"github.com/prometheus/common/log"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"syscall"
 	"time"
