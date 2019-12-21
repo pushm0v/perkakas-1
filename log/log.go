@@ -184,7 +184,7 @@ func (l *Logger) syncMapToLogFields() (fields log.Fields) {
 }
 
 var (
-	regexPerkakas = regexp.MustCompile("perkakas")
+	regexPerkakas = regexp.MustCompile("perkakas/log")
 	regexTest     = regexp.MustCompile("_test.go")
 )
 
@@ -192,6 +192,12 @@ func (l *Logger) setCaller(level Level, msgs ...interface{}) {
 	if msgs == nil || len(msgs) == 0 {
 		return
 	}
+
+	var (
+		fileName      []byte
+		matchPerkakas bool
+		matchTest     bool
+	)
 
 	for _, val := range msgs {
 		var index int
@@ -201,22 +207,18 @@ func (l *Logger) setCaller(level Level, msgs ...interface{}) {
 
 		index = DefaultIndex
 
-		for found := true; found; index++ {
-			var (
-				fileName []byte
-			)
+		for ; ; index++ {
 			_, file, _, ok := runtime.Caller(index)
 			if !ok {
-				found = false
 				break
 			}
-			fileName = []byte(strings.ToLower(file))
-			if !regexPerkakas.Match(fileName) {
-				found = false
+			fileName = append(fileName[:0], []byte(strings.ToLower(file))...)
+			matchPerkakas = regexPerkakas.Match(fileName)
+			matchTest = regexTest.Match(fileName)
+			if !matchPerkakas {
 				break
 			}
-			if regexPerkakas.Match(fileName) && regexTest.Match(fileName) {
-				found = false
+			if matchPerkakas && matchTest {
 				break
 			}
 		}
