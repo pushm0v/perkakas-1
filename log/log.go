@@ -5,7 +5,9 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"regexp"
 	"runtime"
+	"strings"
 	"sync"
 	"time"
 
@@ -47,6 +49,11 @@ const (
 	InfoLevel
 	DebugLevel
 	TraceLevel
+)
+
+const (
+	// DefaultIndex specifies the default index of runtime caller.
+	DefaultIndex = 2
 )
 
 func (level Level) MarshalText() ([]byte, error) {
@@ -176,17 +183,45 @@ func (l *Logger) syncMapToLogFields() (fields log.Fields) {
 	return
 }
 
+var (
+	regexPerkakas = regexp.MustCompile("perkakas")
+	regexTest     = regexp.MustCompile("_test.go")
+)
+
 func (l *Logger) setCaller(level Level, msgs ...interface{}) {
 	if msgs == nil || len(msgs) == 0 {
 		return
 	}
 
 	for _, val := range msgs {
+		var index int
 		if val == "" {
 			continue
 		}
 
-		if pc, file, line, ok := runtime.Caller(2); ok {
+		index = DefaultIndex
+
+		for found := true; found; index++ {
+			var (
+				fileName []byte
+			)
+			_, file, _, ok := runtime.Caller(index)
+			if !ok {
+				found = false
+				break
+			}
+			fileName = []byte(strings.ToLower(file))
+			if !regexPerkakas.Match(fileName) {
+				found = false
+				break
+			}
+			if regexPerkakas.Match(fileName) && regexTest.Match(fileName) {
+				found = false
+				break
+			}
+		}
+
+		if pc, file, line, ok := runtime.Caller(index); ok {
 			fName := runtime.FuncForPC(pc).Name()
 
 			err, ok := val.(error)
