@@ -154,6 +154,9 @@ func (l *Logger) clear() {
 		return false
 	})
 
+	id := uuid.NewV1().String()
+
+	l.fields.Store(FieldLogID, id)
 	l.fields.Store("stack", []message{})
 }
 
