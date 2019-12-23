@@ -5,9 +5,7 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"regexp"
 	"runtime"
-	"strings"
 	"sync"
 	"time"
 
@@ -52,8 +50,8 @@ const (
 )
 
 const (
-	// DefaultIndex specifies the default index of runtime caller.
-	DefaultIndex = 2
+	// OriginalCallerFunc specifies the index of original caller function
+	OriginalCallerFunc = 2
 )
 
 func (level Level) MarshalText() ([]byte, error) {
@@ -133,7 +131,7 @@ func (l *Logger) AddMessage(level Level, message ...interface{}) *Logger {
 
 func (l *Logger) Print(directMsg ...interface{}) {
 	if len(directMsg) > 0 {
-		l.AddMessage(DebugLevel, directMsg...)
+		l.setCaller(DebugLevel, directMsg...)
 	}
 
 	stackVal, _ := l.fields.Load("stack")
@@ -183,47 +181,17 @@ func (l *Logger) syncMapToLogFields() (fields log.Fields) {
 	return
 }
 
-var (
-	regexPerkakas = regexp.MustCompile("perkakas/log")
-	regexTest     = regexp.MustCompile("_test.go")
-)
-
 func (l *Logger) setCaller(level Level, msgs ...interface{}) {
 	if msgs == nil || len(msgs) == 0 {
 		return
 	}
 
-	var (
-		fileName      []byte
-		matchPerkakas bool
-		matchTest     bool
-	)
-
 	for _, val := range msgs {
-		var index int
 		if val == "" {
 			continue
 		}
 
-		index = DefaultIndex
-
-		for ; ; index++ {
-			_, file, _, ok := runtime.Caller(index)
-			if !ok {
-				break
-			}
-			fileName = append(fileName[:0], []byte(strings.ToLower(file))...)
-			matchPerkakas = regexPerkakas.Match(fileName)
-			matchTest = regexTest.Match(fileName)
-			if !matchPerkakas {
-				break
-			}
-			if matchPerkakas && matchTest {
-				break
-			}
-		}
-
-		if pc, file, line, ok := runtime.Caller(index); ok {
+		if pc, file, line, ok := runtime.Caller(OriginalCallerFunc); ok {
 			fName := runtime.FuncForPC(pc).Name()
 
 			err, ok := val.(error)

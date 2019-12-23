@@ -13,7 +13,7 @@ main.go
 *.test
 test/
 
-# Output of thesa go coverage tool, specifically when used with LiteIDE
+# Output of the go coverage tool, specifically when used with LiteIDE
 *.out
 
 .idea/*
