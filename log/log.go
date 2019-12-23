@@ -120,13 +120,18 @@ func (l *Logger) SetResponse(res interface{}, body []byte) {
 }
 
 func (l *Logger) AddMessage(level Level, message ...interface{}) *Logger {
-	l.setCaller(level, message...)
+	l.setCaller(level, 2, message...)
+	return l
+}
+
+func (l *Logger) addMessage(level Level, callerLevel int, message ...interface{}) *Logger {
+	l.setCaller(level, callerLevel, message...)
 	return l
 }
 
 func (l *Logger) Print(directMsg ...interface{}) {
 	if len(directMsg) > 0 {
-		l.AddMessage(DebugLevel, directMsg...)
+		l.addMessage(DebugLevel, 3, directMsg...)
 	}
 
 	stackVal, _ := l.fields.Load("stack")
@@ -176,7 +181,7 @@ func (l *Logger) syncMapToLogFields() (fields log.Fields) {
 	return
 }
 
-func (l *Logger) setCaller(level Level, msgs ...interface{}) {
+func (l *Logger) setCaller(level Level, callerLevel int, msgs ...interface{}) {
 	if msgs == nil || len(msgs) == 0 {
 		return
 	}
@@ -186,7 +191,7 @@ func (l *Logger) setCaller(level Level, msgs ...interface{}) {
 			continue
 		}
 
-		if pc, file, line, ok := runtime.Caller(2); ok {
+		if pc, file, line, ok := runtime.Caller(callerLevel); ok {
 			fName := runtime.FuncForPC(pc).Name()
 
 			err, ok := val.(error)
