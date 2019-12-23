@@ -124,14 +124,9 @@ func (l *Logger) AddMessage(level Level, message ...interface{}) *Logger {
 	return l
 }
 
-func (l *Logger) addMessage(level Level, callerLevel int, message ...interface{}) *Logger {
-	l.setCaller(level, callerLevel, message...)
-	return l
-}
-
 func (l *Logger) Print(directMsg ...interface{}) {
 	if len(directMsg) > 0 {
-		l.addMessage(DebugLevel, 3, directMsg...)
+		l.setCaller(DebugLevel, 2, directMsg...)
 	}
 
 	stackVal, _ := l.fields.Load("stack")
