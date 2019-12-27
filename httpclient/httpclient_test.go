@@ -1,6 +1,7 @@
 package httpclient
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"testing"
@@ -12,6 +13,10 @@ import (
 	"gopkg.in/h2non/gock.v1"
 )
 
+type httpClientResponse struct {
+	Test string "json:`test`"
+}
+
 type LogTestSuite struct {
 	suite.Suite
 	HttpClient   *httpclient.Client
@@ -22,7 +27,7 @@ type LogTestSuite struct {
 }
 
 func (suite *LogTestSuite) SetupTest() {
-	suite.HttpClient = NewHttpClient(nil) // Default configuration
+	suite.HttpClient = NewHttpClient(nil).Client // Default configuration
 	suite.host = "http://some-test-url.com"
 	suite.endpoint = "test"
 	suite.url = fmt.Sprintf("%s/%s", suite.host, suite.endpoint)
@@ -42,12 +47,19 @@ func (suite *LogTestSuite) TestGetRequest() {
 	resp, err := suite.HttpClient.Get(suite.url, nil)
 	assert.Nil(suite.T(), err, "Nil expected")
 
-	_, err = ioutil.ReadAll(resp.Body)
+	bodyByte, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		suite.FailNow(err.Error())
 	}
 
-	assert.Equal(suite.T(), true, gock.IsDone(), "must be equal")
+	result := &httpClientResponse{}
+	err = json.Unmarshal(bodyByte, result)
+	if err != nil {
+		suite.FailNow(err.Error())
+	}
+
+	assert.Equal(suite.T(), true, gock.IsDone(), "Must be equal")
+	assert.Equal(suite.T(), "a1234-abcd", result.Test, "Result is not same")
 }
 
 func TestSuite(t *testing.T) {

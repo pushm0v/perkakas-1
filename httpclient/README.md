@@ -11,6 +11,7 @@ conf.MaximumJitterInterval = 5 * time.Millisecond // 5ms
 conf.Timeout = 15000 * time.Millisecond           // 15s
 conf.RetryCount = 3  // 3 times
 
-httpClient := NewHtgtpClient(conf)
-resp, err := httpClient.Get("http://some-url", headers)
+h := NewHttpClient(conf)
+resp, err := h.Client.Get("http://some-url", headers)
+// Do something with response
 ```
