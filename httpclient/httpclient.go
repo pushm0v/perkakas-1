@@ -7,6 +7,10 @@ import (
 	"github.com/gojektech/heimdall/httpclient"
 )
 
+type HttpClient struct {
+	Client *httpclient.Client
+}
+
 type HttpClientConf struct {
 	BackoffInterval       time.Duration
 	MaximumJitterInterval time.Duration
@@ -14,7 +18,7 @@ type HttpClientConf struct {
 	RetryCount            int
 }
 
-func NewHttpClient(conf *HttpClientConf) *httpclient.Client {
+func NewHttpClient(conf *HttpClientConf) *HttpClient {
 
 	if conf == nil {
 		// Default configuration
@@ -28,9 +32,13 @@ func NewHttpClient(conf *HttpClientConf) *httpclient.Client {
 	backoff := heimdall.NewConstantBackoff(conf.BackoffInterval, conf.MaximumJitterInterval)
 	retrier := heimdall.NewRetrier(backoff)
 
-	return httpclient.NewClient(
+	newClient := httpclient.NewClient(
 		httpclient.WithHTTPTimeout(conf.Timeout),
 		httpclient.WithRetrier(retrier),
 		httpclient.WithRetryCount(conf.RetryCount),
 	)
+
+	return &HttpClient{
+		Client: newClient,
+	}
 }
