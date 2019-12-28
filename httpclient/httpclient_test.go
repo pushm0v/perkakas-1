@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"testing"
 
 	"github.com/gojektech/heimdall/httpclient"
@@ -15,6 +16,15 @@ import (
 
 type httpClientResponse struct {
 	Test string "json:`test`"
+}
+
+type testCustomHttp struct {
+	client *http.Client
+}
+
+func (t *testCustomHttp) Do(request *http.Request) (*http.Response, error) {
+	request.SetBasicAuth("some-user", "password")
+	return t.client.Do(request)
 }
 
 type LogTestSuite struct {
@@ -45,6 +55,35 @@ func (suite *LogTestSuite) TestGetRequest() {
 		JSON(suite.mockResponse)
 
 	resp, err := suite.HttpClient.Get(suite.url, nil)
+	assert.Nil(suite.T(), err, "Nil expected")
+
+	bodyByte, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		suite.FailNow(err.Error())
+	}
+
+	result := &httpClientResponse{}
+	err = json.Unmarshal(bodyByte, result)
+	if err != nil {
+		suite.FailNow(err.Error())
+	}
+
+	assert.Equal(suite.T(), true, gock.IsDone(), "Must be equal")
+	assert.Equal(suite.T(), "a1234-abcd", result.Test, "Result is not same")
+}
+
+func (suite *LogTestSuite) TestGetRequestWithCustomClient() {
+	defer gock.Off()
+
+	gock.New(suite.host).
+		Get(suite.endpoint).
+		Reply(200).
+		JSON(suite.mockResponse)
+
+	suite.HttpClient = NewHttpWithCustomClient(nil, &testCustomHttp{client: http.DefaultClient}).Client
+
+	header := http.Header{}
+	resp, err := suite.HttpClient.Get(suite.url, header)
 	assert.Nil(suite.T(), err, "Nil expected")
 
 	bodyByte, err := ioutil.ReadAll(resp.Body)
