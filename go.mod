@@ -14,6 +14,7 @@ require (
 	github.com/im7mortal/kmutex v1.0.0
 	github.com/influxdata/influxdb1-client v0.0.0-20190809212627-fc22c7df067e
 	github.com/kr/pretty v0.1.0 // indirect
+	github.com/minio/minio-go/v6 v6.0.45
 	github.com/olivere/elastic/v7 v7.0.9
 	github.com/prometheus/common v0.2.0
 	github.com/satori/go.uuid v1.2.0
