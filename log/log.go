@@ -50,27 +50,6 @@ const (
 	TraceLevel
 )
 
-func (l Level) String() string {
-	switch l {
-	case PanicLevel:
-		return "Panic"
-	case FatalLevel:
-		return "Fatal"
-	case ErrorLevel:
-		return "error"
-	case WarnLevel:
-		return "warning"
-	case InfoLevel:
-		return "info"
-	case DebugLevel:
-		return "debug"
-	case TraceLevel:
-		return "trace"
-	default:
-		return "unknown"
-	}
-}
-
 func (level Level) MarshalText() ([]byte, error) {
 	switch level {
 	case TraceLevel:
