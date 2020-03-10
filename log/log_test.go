@@ -88,6 +88,18 @@ func (suite *LogTestSuite) TestMessageStackType() {
 	assert.Panics(suite.T(), func() { ensureStackType(message) }, "should panic")
 }
 
+func (suite *LogTestSuite) TestFindMaxLevel() {
+	msgs := []message{
+		message{Level: TraceLevel},
+		message{Level: DebugLevel},
+		message{Level: WarnLevel},
+		message{Level: ErrorLevel},
+	}
+	
+	maxLevel := suite.Logger.findMaxLevel(msgs)
+	assert.Equal(suite.T(), ErrorLevel, maxLevel)
+}
+
 func TestLogTestSuite(t *testing.T) {
 	suite.Run(t, new(LogTestSuite))
 }

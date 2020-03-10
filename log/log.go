@@ -3,6 +3,7 @@ package log
 import (
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"os"
 	"runtime"
@@ -133,11 +134,28 @@ func (l *Logger) Print(directMsg ...interface{}) {
 	messages := ensureStackType(stackVal)
 
 	if len(messages) > 0 {
+		maxLevel := l.findMaxLevel(messages)
+		if maxLevel < WarnLevel {
+			l.logger.SetOutput(os.Stderr)
+		} else {
+			l.logger.SetOutput(os.Stdout)
+		}
+
 		entry := l.logger.WithFields(l.syncMapToLogFields())
 		entry.Tracef("%+v", messages[0].Message)
 	}
 
 	l.clear()
+}
+
+func (l *Logger) findMaxLevel(msgs []message) (maxLevel Level) {
+	currentMaxLevel := TraceLevel
+	for _, msg := range msgs {
+		currentMaxLevel = Level(math.Min(float64(msg.Level), float64(currentMaxLevel)))
+	}
+
+	maxLevel = currentMaxLevel
+	return
 }
 
 func (l *Logger) clear() {
