@@ -2,9 +2,14 @@ package httputil
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"regexp"
+	"time"
+
+	"github.com/asaskevich/govalidator"
+	"github.com/kitabisa/perkakas/v2/random"
 )
 
 const passwordPattern = `(\\{0,1}"password\\{0,1}"):\s*\\{0,1}"(.*?)\\{0,1}"`
@@ -41,4 +46,27 @@ func ExcludeSensitiveHeader(header http.Header) (h http.Header) {
 func ExcludeSensitiveRequestBody(body *string) {
 	result := passRemover.ReplaceAllString(*body, "")
 	*body = result
+}
+
+func KitabisaHeader(req *http.Request, clientName, clientVersion string) *http.Request {
+	timestamp := fmt.Sprintf("%d", time.Now().Unix())
+
+	if !govalidator.IsSemver(clientVersion) {
+		clientVersion = "1.0.0"
+	}
+
+	id, err := random.UUID()
+	if err != nil {
+		id = fmt.Sprintf("%s-%s-error-generate-uuid", clientName, clientVersion)
+	}
+
+	if req.Header == nil {
+		req.Header = make(http.Header)
+	}
+
+	req.Header.Set("X-Ktbs-Request-ID", id)
+	req.Header.Set("X-Ktbs-Client-Name", clientName)
+	req.Header.Set("X-Ktbs-Client-Version", clientVersion)
+	req.Header.Set("X-Ktbs-Time", timestamp)
+	return req
 }
