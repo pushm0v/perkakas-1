@@ -48,23 +48,26 @@ func ExcludeSensitiveRequestBody(body *string) {
 	*body = result
 }
 
-func KitabisaHeader(req *http.Request, clientName, clientVersion string) *http.Request {
+func KitabisaHeader(req *http.Request, clientName, clientVersion, requestID string) *http.Request {
 	timestamp := fmt.Sprintf("%d", time.Now().Unix())
 
 	if !govalidator.IsSemver(clientVersion) {
 		clientVersion = "1.0.0"
 	}
 
-	id, err := random.UUID()
-	if err != nil {
-		id = fmt.Sprintf("%s-%s-error-generate-uuid", clientName, clientVersion)
+	if requestID == "" {
+		var err error
+		requestID, err = random.UUID()
+		if err != nil {
+			requestID = fmt.Sprintf("%s-%s-error-generate-uuid", clientName, clientVersion)
+		}
 	}
 
 	if req.Header == nil {
 		req.Header = make(http.Header)
 	}
 
-	req.Header.Set("X-Ktbs-Request-ID", id)
+	req.Header.Set("X-Ktbs-Request-ID", requestID)
 	req.Header.Set("X-Ktbs-Client-Name", clientName)
 	req.Header.Set("X-Ktbs-Client-Version", clientVersion)
 	req.Header.Set("X-Ktbs-Time", timestamp)
